@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevHelper Code Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🔍 DevHelper Code Analysis</h1>
+      <p class="subtitle">Аналіз невикористаного коду</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="content">
+      <div class="upload-section" id="uploadSection">
+        <div class="icon-wrapper">
+          <span class="icon">📦</span>
+        </div>
+        <h3>Завантажте ZIP архів проекту</h3>
+        <p class="description">Повний аналіз CSS класів та JavaScript функцій</p>
+        
+        <input type="file" id="zipInput" accept=".zip" style="display: none;">
+        <button id="uploadBtn" class="btn btn-primary">
+          📁 Вибрати ZIP файл
+        </button>
+
+        <div class="info-box">
+          <p class="info-title">💡 Що сканується:</p>
+          <ul class="info-list">
+            <li>Всі CSS файли в проекті</li>
+            <li>Всі JS/TS/JSX/TSX файли</li>
+            <li>Автоматична фільтрація Tailwind</li>
+            <li>Пошук невикористаних функцій</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="uploadProgress" class="progress-section" style="display: none;">
+        <div class="spinner"></div>
+        <p class="progress-text">Аналіз проекту... Це може зайняти до 30 секунд</p>
+      </div>
+
+      <div id="uploadResults" class="results-section" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="lib/zip-analyzer.js"></script>
+  <script src="popup-main.js"></script>
+</body>
+</html>

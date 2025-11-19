@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "DevHelper Code Analysis",
+  "version": "1.0.0",
+  "description": "Аналіз невикористаного коду в проектах - CSS класи, функції, імпорти",
+  "permissions": ["storage", "activeTab", "scripting", "windows"],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/jszip.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
