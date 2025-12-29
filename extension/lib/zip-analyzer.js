@@ -632,9 +632,14 @@ function analyzeAPIRoutes(jsFiles) {
 
     // 1. Next.js API Routes: export async function GET(request)
     const nextApiMatches = content.matchAll(
-      /export\s+(?:async\s+)?function\s+(GET|POST|PUT|DELETE|PATCH)\s*\(/gi
+      // /export\s+(?:async\s+)?function\s+(GET|POST|PUT|DELETE|PATCH)\s*\(/gi
+      /export\s+(?:async\s+)?function\s+(GET|POST|PUT|DELETE|PATCH)\s*\(([^)]*)\)/gi
     );
     for (const match of nextApiMatches) {
+      const args = match[2]
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean);
       const method = match[1].toUpperCase();
       const path = extractNextJSPath(file.name);
       const lineNum = content.substring(0, match.index).split("\n").length;
@@ -645,12 +650,14 @@ function analyzeAPIRoutes(jsFiles) {
         file: file.name,
         line: lineNum,
         params: params,
+        args,
       });
     }
 
     // 2. Express.js стиль: app.get('/api/users', ...) або router.post(...)
     const expressMatches = content.matchAll(
-      /(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi
+      // /(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/gi
+      /(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*['"`][^'"`]+['"`]\s*,\s*\(([^)]*)\)/gi
     );
     for (const match of expressMatches) {
       const method = match[1].toUpperCase();
@@ -663,33 +670,52 @@ function analyzeAPIRoutes(jsFiles) {
         file: file.name,
         line: lineNum,
         params: params,
+        args: match[3]
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean),
       });
     }
 
     // 3. Fetch викли: fetch('/api/users') або fetch(`/api/${id}`)
-    // Шукаємо всі fetch виклики
     const fetchMatches = content.matchAll(
       /\bfetch\s*\(\s*['"`]([^'"`]+)['"`]/gi
     );
+
     for (const match of fetchMatches) {
       const path = match[1];
       const lineNum = content.substring(0, match.index).split("\n").length;
 
-      // Шукаємо метод в наступних 200 символах
-      const contextAfter = content.substring(match.index, match.index + 200);
+      // Контекст після fetch
+      const contextAfter = content.substring(match.index, match.index + 400);
+
+      // HTTP метод
       const methodMatch = contextAfter.match(
         /method\s*:\s*['"`]([^'"`]+)['"`]/i
       );
       const method = methodMatch ? methodMatch[1].toUpperCase() : "GET";
 
+      // 🔥 BODY (тепер bodyMatch визначений)
+      const bodyMatch = contextAfter.match(
+        /body\s*:\s*JSON\.stringify\s*\(\s*\{([^}]+)\}/i
+      );
+
+      const bodyProps = bodyMatch
+        ? bodyMatch[1].split(",").map((p) => p.trim())
+        : [];
+
       const params = extractFetchParamsFromContent(content, match.index);
+
       routes.push({
-        method: method,
-        path: path,
+        method,
+        path,
         file: file.name,
         line: lineNum,
-        params: params,
+        params,
         type: "client",
+        requestProps: {
+          body: bodyProps,
+        },
       });
     }
 
