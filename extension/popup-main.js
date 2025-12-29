@@ -238,7 +238,556 @@ function renderDetailedBlocks(result) {
     typesAnalysis = { allTypes: [], byFile: {}, stats: {} },
   } = result;
 
+  // Common libraries with descriptions
+  const commonLibs = {
+    // UI Frameworks
+    react: "Бібліотека для побудови користувацьких інтерфейсів від Facebook",
+    "react-dom": "Орендер React у веб-додатках",
+    "react-scripts": "Скрипти та конфігурація для Create React App",
+    next: "React-фреймворк для продакшену (SSR, SSG, ISR)",
+    gatsby: "Генератор статичних сайтів на React",
+    vue: "Прогресивний JavaScript-фреймворк",
+    nuxt: "Універсальний додаток на Vue.js",
+    angular: "Платформа для веб-додатків",
+    svelte: "Компілятор для реактивних інтерфейсів",
+
+    // State Management
+    redux: "Контейнер стану для JavaScript додатків",
+    "react-redux": "Офіційний біндінг React для Redux",
+    "@reduxjs/toolkit": "Офіційний набір інструментів для Redux",
+    zustand: "Мінімалістичне сховище стану для React",
+    mobx: "Бібліотека керування станом",
+    recoil: "Бібліотека керування станом від Facebook",
+    jotai: "Примітиви стану для React",
+    valtio: "Просте керування станом з проксі",
+
+    // UI Components
+    "@mui/material": "Бібліотека компонентів Material-UI",
+    "@mui/icons-material": "Іконки Material Design",
+    "@mui/lab": "Лабораторні компоненти Material-UI",
+    "@mui/x-charts": "Графіки для MUI",
+    "@mui/x-date-pickers": "Вибір дат для MUI",
+    antd: "UI бібліотека Ant Design",
+    "chakra-ui": "Простий, модульний та доступний UI-компонент",
+    tailwindcss: "Утилітарний CSS фреймворк",
+    bootstrap: "Популярний CSS фреймворк",
+    "slick-carousel": "Адаптивний карусель слайдів",
+    "react-slick": "React-компонент для каруселі slick",
+
+    // Form Handling
+    "react-hook-form": "Валідація форм з мінімальним рендерингом",
+    formik: "Побудова форм у React",
+    yup: "Схема валідації об'єктів",
+    zod: "Схема валідації TypeScript-first",
+    "@hookform/resolvers": "Інтеграція react-hook-form з валідаторами",
+
+    // Data Fetching
+    axios: "HTTP клієнт для браузера та Node.js",
+    "@apollo/client": "Клієнт для роботи з GraphQL",
+    graphql: "Мова запитів для API",
+    ky: "Мінімалістичний HTTP клієнт на основі Fetch",
+    "react-query": "Керування серверним станом у React",
+    "@tanstack/react-query": "Бібліотека для керування кешем даних",
+    swr: "React Hooks для віддалених даних",
+
+    // Date & Time
+    dayjs: "Маленька альтернатива Moment.js",
+    "date-fns": "Сучасна бібліотека для роботи з датами",
+    luxon: "Бібліотека для роботи з датами та часом",
+    moment: "Бібліотека для роботи з датами (застаріла)",
+
+    // Internationalization
+    i18next: "Фреймворк інтернаціоналізації",
+    "react-i18next": "Інтеграція i18next з React",
+    "react-intl": "Форматування дат, чисел та рядків",
+
+    // Testing
+    jest: "JavaScript-фреймворк для тестування",
+    "@testing-library/react": "Інструменти тестування React-компонентів",
+    cypress: "Фреймворк для e2e тестування",
+    "react-testing-library": "Легковісні утиліти для тестування React",
+
+    // Build Tools
+    typescript: "Надбудова над JavaScript з типізацією",
+    webpack: "Збірка модулів JavaScript",
+    vite: "Швидка збірка для сучасного вебу",
+    eslint: "Лінтер для JavaScript/TypeScript",
+    prettier: "Форматувальник коду",
+
+    // Utilities
+    lodash: "Утиліти для роботи з даними",
+    clsx: "Утиліта для об'єднання класів",
+    classnames: "Просте об'єднання класів",
+    immer: "Незмінні структури даних",
+    ramda: "Функційна бібліотека для JavaScript",
+
+    // UI Helpers
+    "react-helmet": "Керування head документа",
+    "react-dropzone": "Завантаження файлів з перетягуванням",
+    "react-virtualized": "Ефективний рендеринг списків",
+    "react-window": "Ефективний рендеринг списків (новіша версія)",
+
+    // Charts & Visualization
+    recharts: "Бібліотека графіків на основі D3",
+    apexcharts: "Сучасні інтерактивні графіки",
+    d3: "Бібліотека для візуалізації даних",
+
+    // Authentication
+    "auth0-js": "Аутентифікація з Auth0",
+    firebase: "Платформа для веб-додатків від Google",
+    "jwt-decode": "Декодування JWT токенів",
+
+    // Payment
+    stripe: "Інтеграція з платіжною системою Stripe",
+    braintree: "Платіжний шлюз Braintree",
+
+    // Maps
+    leaflet: "Бібліотека інтерактивних карт",
+    "google-maps-react": "Інтеграція Google Maps з React",
+
+    // Animation
+    "framer-motion": "Бібліотека анімацій для React",
+    "react-spring": "Фізично реалістичні анімації",
+    gsap: "Потужна бібліотека анімацій",
+
+    // Documentation
+    storybook: "Інструмент для розробки UI компонентів",
+    docusaurus: "Генератор документації",
+
+    // State Persistence
+    "redux-persist": "Збереження стану Redux у сховищі",
+    localforage: "Покращений localStorage",
+
+    // Rich Text Editors
+    "draft-js": "Фреймворк для створення текстових редакторів",
+    "react-quill": "Потужний текстовий редактор",
+    slate: "Повністю налаштовуваний фреймворк для текстових редакторів",
+
+    // International Phone Input
+    "react-phone-number-input": "Введення номеру телефону з підтримкою країн",
+    "libphonenumber-js": "Бібліотека для роботи з номерами телефонів",
+    "react-country-flag": "Відображення прапорів країн",
+
+    // QR Codes
+    qrcode: "Генерація QR-кодів",
+    "react-qr-code": "Компонент React для генерації QR-кодів",
+
+    // Notifications
+    notistack: "Повідомлення та сповіщення",
+    "react-toastify": "Тостери для сповіщень",
+    "react-hot-toast": "Легкі гарячі сповіщення",
+
+    // Data Tables
+    "@tanstack/react-table": "Потужні таблиці з сортуванням та пагінацією",
+    "react-data-table-component": "Гнучкий компонент таблиць даних",
+    "material-table": "Таблиці даних для Material-UI",
+
+    // File Handling
+    "file-saver": "Збереження файлів у браузері",
+    xlsx: "Робота з Excel файлами",
+    "pdf-lib": "Створення та редагування PDF",
+
+    // UI Kits
+    "@chakra-ui/react": "Простий, модульний та доступний компонентний набір",
+    "shadcn/ui":
+      "Компоненти UI, створені з використанням Radix UI та Tailwind CSS",
+    daisyui: "Безкоштовна бібліотека компонентів для Tailwind CSS",
+    headlessui: "Повністю нестилізовані, повністю доступні компоненти UI",
+    "radix-ui":
+      "Низькорівневі, нестилізовані компоненти для створення дизайн-систем",
+    mantine:
+      "Повноцінна бібліотека React-компонентів, яка прагне надати приємний досвід розробки",
+
+    // State Management (Additional)
+    xstate: "Бібліотека керування станом та автоматів станів",
+    effector: "Ефективне керування станом",
+    "mobx-state-tree": "Розширене керування станом з MobX",
+    concent: "Прогресивне керування станом для React",
+    rematch: "Фреймворк для Redux без шаблонного коду",
+
+    // Form Handling (Additional)
+    formidable: "Валідація та обробка форм",
+    "react-jsonschema-form": "Генерація форм з JSON Schema",
+    uniforms: "React-бібліотека для створення форм з будь-якої схеми даних",
+
+    // Animation & Gestures (Additional)
+    "react-spring": "Фізично реалістичні анімації для React",
+    "framer-motion": "Бібліотека анімацій для React на основі Framer",
+    "react-use-gesture": "Сучасні жести для React",
+    "react-intersection-observer": "Відстеження видимості елементів",
+
+    // Data Visualization (Additional)
+    victory: "Компоненти для візуалізації даних для React",
+    nivo: "Багатобічна бібліотека графіків на основі D3",
+    visx: "Візуальні компоненти від Airbnb",
+    echarts: "Потужна бібліотека для створення інтерактивних графіків",
+
+    // Maps & Geospatial (Additional)
+    "react-leaflet": "React-компоненти для Leaflet",
+    "google-map-react": "Інтеграція Google Maps з React",
+    "deck.gl": "Візуалізація великих геопросторових даних",
+    "mapbox-gl": "Інтерактивні карти з підтримкою векторних таліць",
+
+    // Testing (Additional)
+    vitest: "Швидкий нативний тестовий фреймворк для Vite",
+    playwright: "Надійне тестування для сучасних веб-додатків",
+    msw: "API-мокінг для браузера та Node.js",
+    "testing-library": "Сучасні API для тестування UI",
+
+    // Build & Bundling (Additional)
+    esbuild: "Надшвидкий JavaScript бандлер",
+    swc: "Швидкий компілятор JavaScript/TypeScript",
+    rollup: "Модульний бандлер для JavaScript",
+    parcel: "Нульова конфігурація веб-додатку",
+
+    // Mobile (Additional)
+    "react-native": "Фреймворк для створення нативних мобільних додатків",
+    expo: "Набір інструментів для розробки React Native додатків",
+    "react-native-web": "Запуск React Native компонентів у вебі",
+    "react-native-paper": "Material Design для React Native",
+
+    // Desktop (Additional)
+    electron: "Побудова крос-платформових десктопних додатків",
+    tauri: "Менші, швидкі настільні програми з веб-технологіями",
+    "electron-builder": "Повний набір для пакування Electron-додатків",
+
+    // WebAssembly (Additional)
+    "wasm-pack": "Створення та публікація WebAssembly з Rust",
+    emscripten: "Компіляція C/C++ у WebAssembly",
+    assemblyscript: "TypeScript-подібна мова для WebAssembly",
+
+    // Web3 & Blockchain (Additional)
+    ethers: "Повна реалізація Ethereum Wallet",
+    "web3.js": "Бібліотека для взаємодії з блокчейном Ethereum",
+    wagmi: "React Hooks для Ethereum",
+    viem: "Типобезпечний інтерфейс для Ethereum",
+
+    // Authentication & Auth Providers
+    "@clerk/clerk-react":
+      "Сервіс аутентифікації та керування користувачами для React",
+    "@react-oauth/google": "OAuth-авторизація через Google для React",
+    "jwt-decode": "Декодування JWT токенів на клієнті",
+
+    // Styling / CSS-in-JS
+    "@emotion/react": "CSS-in-JS бібліотека для стилізації компонентів",
+    "@emotion/styled": "Styled API для Emotion (CSS-in-JS)",
+
+    // Linting & Code Quality
+    "@eslint/js": "Офіційні базові правила ESLint",
+    "eslint-plugin-react-hooks": "Правила ESLint для React Hooks",
+    "eslint-plugin-react-refresh": "Підтримка Fast Refresh у React",
+    "@tanstack/eslint-plugin-query": "ESLint правила для TanStack Query",
+    "typescript-eslint": "ESLint інструменти для TypeScript",
+    knip: "Аналіз невикористаних файлів, залежностей та експорту",
+    globals: "Список глобальних змінних середовищ JavaScript",
+
+    // UI Primitives (Radix UI)
+    "@radix-ui/react-alert-dialog": "Модальне вікно попередження (Radix UI)",
+    "@radix-ui/react-avatar": "Компонент аватара користувача",
+    "@radix-ui/react-checkbox": "Доступний checkbox компонент",
+    "@radix-ui/react-collapsible": "Компонент зі згортанням/розгортанням",
+    "@radix-ui/react-dialog": "Доступний діалог (modal)",
+    "@radix-ui/react-direction": "Утиліти напрямку LTR/RTL",
+    "@radix-ui/react-dropdown-menu": "Dropdown меню",
+    "@radix-ui/react-icons": "Іконки Radix UI",
+    "@radix-ui/react-label": "Label для формових елементів",
+    "@radix-ui/react-popover": "Popover компонент",
+    "@radix-ui/react-radio-group": "Група радіо-кнопок",
+    "@radix-ui/react-scroll-area": "Кастомний scrollbar",
+    "@radix-ui/react-select": "Select компонент",
+    "@radix-ui/react-separator": "Візуальний роздільник",
+    "@radix-ui/react-slider": "Slider компонент",
+    "@radix-ui/react-slot": "Композиція компонентів",
+    "@radix-ui/react-switch": "Toggle switch",
+    "@radix-ui/react-tabs": "Tabs компонент",
+    "@radix-ui/react-tooltip": "Tooltip компонент",
+
+    // TanStack Ecosystem
+    "@tanstack/react-query-devtools": "DevTools для TanStack Query",
+    "@tanstack/react-router": "Типобезпечний роутер для React",
+    "@tanstack/react-router-devtools": "DevTools для TanStack Router",
+    "@tanstack/router-plugin": "Vite/Build плагін для TanStack Router",
+
+    // Build / Tooling
+    "@vitejs/plugin-react-swc": "SWC-плагін для швидкої збірки React у Vite",
+    "@tailwindcss/vite": "Офіційний Tailwind CSS плагін для Vite",
+    "@trivago/prettier-plugin-sort-imports": "Автоматичне сортування імпортів",
+    "prettier-plugin-tailwindcss": "Сортування Tailwind-класів",
+    "@types/node": "TypeScript типи для Node.js",
+    "@types/react": "TypeScript типи для React",
+    "@types/react-dom": "TypeScript типи для React DOM",
+
+    // UI Utilities
+    "class-variance-authority":
+      "Управління варіантами CSS-класів (часто з Tailwind)",
+    cmdk: "Командна палітра (Command Menu) для React",
+    "lucide-react": "Легка бібліотека SVG-іконок",
+    sonner: "Toast-нотифікації від shadcn/ui",
+    "tailwind-merge": "Обʼєднання Tailwind-класів без конфліктів",
+    "tw-animate-css": "Готові анімації для Tailwind",
+
+    // Forms & Inputs
+    "input-otp": "Ввід одноразових кодів (OTP)",
+    "react-day-picker": "Календар та вибір дат для React",
+
+    // Charts & Visualization
+    "react-google-charts": "Інтеграція Google Charts у React",
+
+    // Rich Text
+    "react-quill-new": "Оновлена версія Quill редактора для React",
+
+    // UX Enhancements
+    "react-top-loading-bar": "Індикатор завантаження зверху сторінки",
+
+    // Fake Data / Testing Utils
+    "@faker-js/faker": "Генерація фейкових даних для тестування",
+    msw: "Мокінг API-запитів у браузері та Node.js",
+
+    // Performance & Monitoring
+    "web-vitals": "Вимірювання продуктивності веб-додатку",
+    sentry: "Моніторинг помилок у продакшені",
+
+    // Security
+    dompurify: "Очищення HTML від XSS",
+    bcryptjs: "Хешування паролів",
+
+    // Networking
+    "socket.io-client": "WebSocket клієнт для real-time додатків",
+
+    // File & Media
+    "browser-image-compression": "Стиснення зображень у браузері",
+    "react-player": "Вбудовування відео з YouTube, Vimeo тощо",
+
+    // Utilities
+    nanoid: "Генерація коротких унікальних ID",
+    "ts-pattern": "Pattern matching для TypeScript",
+
+    "@clerk/clerk-react":
+      "Повноцінна бібліотека аутентифікації та керування користувачами для React",
+    "@react-oauth/google": "Google OAuth авторизація для React",
+    "react-cookie": "Зручна робота з cookies у React",
+    cookie: "Низькорівнева бібліотека для парсингу та серіалізації cookies",
+    "jwt-decode": "Декодування JWT токенів у браузері",
+
+    /* =======================
+     Styling & CSS
+  ======================= */
+    "@emotion/react": "CSS-in-JS бібліотека для стилізації React-компонентів",
+    "@emotion/styled": "Styled API для Emotion",
+    sass: "CSS препроцесор (SCSS/SASS)",
+    postcss: "Інструмент для трансформації CSS за допомогою плагінів",
+    "tailwind-merge": "Об'єднання Tailwind класів без конфліктів",
+    "tw-animate-css": "Анімації для Tailwind CSS",
+    "@tailwindcss/line-clamp":
+      "Tailwind плагін для обмеження кількості рядків тексту",
+
+    /* =======================
+     UI Primitives (Radix)
+  ======================= */
+    "@radix-ui/react-alert-dialog": "Доступні alert-діалоги",
+    "@radix-ui/react-avatar": "Компонент аватару",
+    "@radix-ui/react-checkbox": "Контрольований checkbox",
+    "@radix-ui/react-collapsible": "Згортання та розгортання контенту",
+    "@radix-ui/react-dialog": "Модальні діалоги",
+    "@radix-ui/react-dropdown-menu": "Dropdown меню",
+    "@radix-ui/react-icons": "Іконки Radix UI",
+    "@radix-ui/react-label": "Доступні label компоненти",
+    "@radix-ui/react-popover": "Popover / tooltip контейнери",
+    "@radix-ui/react-radio-group": "Radio кнопки",
+    "@radix-ui/react-scroll-area": "Кастомні scrollbars",
+    "@radix-ui/react-select": "Select компонент",
+    "@radix-ui/react-separator": "Візуальні розділювачі",
+    "@radix-ui/react-slider": "Slider (range)",
+    "@radix-ui/react-slot": "Композиція компонентів",
+    "@radix-ui/react-switch": "Toggle switch",
+    "@radix-ui/react-tabs": "Tabs",
+    "@radix-ui/react-tooltip": "Tooltip підказки",
+
+    /* =======================
+     Icons & UI helpers
+  ======================= */
+    "lucide-react": "Сучасний набір SVG іконок для React",
+    "react-icons": "Популярні іконки (FontAwesome, Material, etc.)",
+    "@react-icons/all-files": "Оптимізовані іконки з tree-shaking",
+    "hamburger-react": "Анімована hamburger-кнопка",
+    "react-burgers": "Набір burger-кнопок для меню",
+
+    /* =======================
+     Forms & Inputs
+  ======================= */
+    "react-select": "Потужний select з пошуком та мультивибором",
+    "input-otp": "OTP / PIN інпут",
+    "react-range-slider-input": "Range slider компонент",
+    "react-day-picker": "Вибір дати (calendar)",
+    "react-hook-form": "Керування формами з мінімальними ререндерами",
+
+    /* =======================
+     Editors & Text
+  ======================= */
+    "react-quill-new": "WYSIWYG редактор на базі Quill",
+    striptags: "Видалення HTML-тегів з рядків",
+
+    /* =======================
+     Loaders & Feedback
+  ======================= */
+    "react-loader-spinner": "Готові спінери та лоадери",
+    "react-top-loading-bar": "Loading bar зверху сторінки",
+    sonner: "Toast-повідомлення нового покоління",
+
+    /* =======================
+     Charts & Visualization
+  ======================= */
+    "react-google-charts": "Google Charts для React",
+    recharts: "Графіки на основі D3",
+
+    /* =======================
+     Data & Utilities
+  ======================= */
+    "class-variance-authority":
+      "Управління варіантами класів (часто з Tailwind)",
+    cmdk: "Command menu (⌘K)",
+    globals: "Список глобальних змінних JS середовищ",
+    knip: "Аналіз невикористаних файлів та залежностей",
+
+    /* =======================
+     Dev / Tooling
+  ======================= */
+    "@eslint/js": "Базові ESLint правила",
+    "eslint-plugin-react-hooks": "Перевірка правил хуків",
+    "eslint-plugin-react-refresh": "ESLint правила для React Fast Refresh",
+    "@tanstack/eslint-plugin-query": "ESLint правила для TanStack Query",
+    "@tanstack/react-query-devtools": "Devtools для React Query",
+    "@tanstack/react-router": "Типобезпечний роутер від TanStack",
+    "@tanstack/react-router-devtools": "Devtools для TanStack Router",
+    "@tanstack/router-plugin": "Плагін для генерації маршрутів",
+    "@trivago/prettier-plugin-sort-imports": "Автоматичне сортування імпортів",
+    "prettier-plugin-tailwindcss": "Сортування Tailwind класів",
+    "typescript-eslint": "ESLint для TypeScript",
+    "@vitejs/plugin-react-swc": "React плагін для Vite з SWC",
+
+    /* =======================
+     Types
+  ======================= */
+    "@types/node": "Типи Node.js",
+    "@types/react": "Типи React",
+    "@types/react-dom": "Типи ReactDOM",
+    "@types/react-slick": "Типи для react-slick",
+  };
+
   let html = "";
+
+  // At the beginning of the package.json handling section, after getting dependencies
+  const dependencies = result.packageJson.dependencies || {};
+  const devDependencies = result.packageJson.devDependencies || {};
+
+  // Process regular dependencies
+  const regularDeps = Object.entries(dependencies).map(([name, version]) => ({
+    name,
+    version,
+    description: commonLibs[name] || "Немає опису",
+    isDev: false,
+  }));
+
+  // Process devDependencies
+  const devDeps = Object.entries(devDependencies).map(([name, version]) => ({
+    name,
+    version,
+    description: commonLibs[name] || "Немає опису",
+    isDev: true,
+  }));
+
+  // Generate HTML for regular dependencies
+  if (regularDeps.length > 0) {
+    html += `
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">
+        <span>📦 Залежності</span>
+        <span style="font-size:11px;background:#f3f4f6;color:#4b5563;padding:2px 8px;border-radius:4px;">
+          ${regularDeps.length} бібліотек
+        </span>
+      </h3>
+      <div style="max-height:300px;overflow-y:auto;margin-top:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb;">
+              <th style="padding:8px 12px;text-align:left;font-weight:500;">Бібліотека</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:500;">Версія</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:500;">Опис</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${regularDeps
+              .map(
+                (dep) => `
+              <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:8px 12px;font-family:monospace;color:#111827;">
+                  ${dep.name}
+                </td>
+                <td style="padding:8px 12px;color:#4b5563;font-family:monospace;">${dep.version}</td>
+                <td style="padding:8px 12px;color:#4b5563;">${dep.description}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  }
+
+  // Generate HTML for devDependencies
+  if (devDeps.length > 0) {
+    html += `
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">
+        <span>🔧 Залежності для розробки</span>
+        <span style="font-size:11px;background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:4px;">
+          ${devDeps.length} бібліотек
+        </span>
+      </h3>
+      <div style="max-height:300px;overflow-y:auto;margin-top:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb;">
+              <th style="padding:8px 12px;text-align:left;font-weight:500;">Бібліотека</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:500;">Версія</th>
+              <th style="padding:8px 12px;text-align:left;font-weight:500;">Опис</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${devDeps
+              .map(
+                (dep) => `
+              <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:8px 12px;font-family:monospace;color:#111827;">
+                  ${dep.name}
+                  <span style="margin-left:6px;font-size:10px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;font-weight:500;">dev</span>
+                </td>
+                <td style="padding:8px 12px;color:#4b5563;font-family:monospace;">${dep.version}</td>
+                <td style="padding:8px 12px;color:#4b5563;">${dep.description}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  }
+
+  // Add message if no dependencies found
+  if (regularDeps.length === 0 && devDeps.length === 0) {
+    html += `
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;background-color:#f9fafb;">
+      <p style="margin:0;color:#6b7280;font-size:13px;display:flex;align-items:center;gap:6px;">
+        <span>ℹ️</span>
+        <span>Не знайдено жодних залежностей у package.json</span>
+      </p>
+    </div>
+  `;
+  }
 
   if (unusedCSS.length > 0) {
     html +=

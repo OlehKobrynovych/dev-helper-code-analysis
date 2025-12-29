@@ -26,18 +26,65 @@ function analyzeZipProject(zipData) {
 
           const packageFile = files.find((f) => /package\.json$/i.test(f.name));
           let projectName = null;
+          let packageJson = null;
           if (packageFile) {
             try {
-              const packageJson = JSON.parse(packageFile.content);
+              packageJson = JSON.parse(packageFile.content);
               if (packageJson && typeof packageJson.name === "string") {
                 projectName = packageJson.name.trim();
               }
-            } catch (error) {
-              console.warn("⚠️ Не вдалося прочитати package.json:", error);
+            } catch (e) {
+              console.error("Error parsing package.json:", e);
             }
           }
 
           // Analyze project architecture
+          let projectType = "Unknown";
+          let framework = "Unknown";
+          let structure = "Unknown";
+
+          // Check for React projects using the already parsed packageJson
+          const hasReactDependency = (() => {
+            if (!packageJson) return false;
+
+            const allDeps = {
+              ...(packageJson.dependencies || {}),
+              ...(packageJson.devDependencies || {}),
+              ...(packageJson.peerDependencies || {}),
+            };
+
+            // Check for React in any of the dependency fields
+            return Object.keys(allDeps).some(
+              (dep) =>
+                dep === "react" ||
+                dep.startsWith("react/") ||
+                dep.endsWith("-react") ||
+                dep === "react-dom" ||
+                dep === "react-native" ||
+                dep === "preact"
+            );
+          })();
+
+          // Also check for React in package.json scripts or other fields
+          const hasReactInProject = (() => {
+            if (!packageJson) return false;
+
+            const packageContent = JSON.stringify(packageJson).toLowerCase();
+            return (
+              packageContent.includes("react-scripts") ||
+              packageContent.includes("react-dev-utils") ||
+              packageContent.includes('"react":') ||
+              packageContent.includes("'react':") ||
+              packageContent.includes('"react-dom":') ||
+              packageContent.includes("'react-dom':") ||
+              (packageJson.scripts &&
+                Object.values(packageJson.scripts).some(
+                  (script) => script && script.includes("react-scripts")
+                ))
+            );
+          })();
+
+          // Framework-specific checks
           const hasNext = files.some(
             (f) =>
               f.name === "next.config.js" ||
@@ -45,25 +92,25 @@ function analyzeZipProject(zipData) {
               f.name === "next.config.ts"
           );
           const hasVite = files.some(
-            (f) => f.name === "vite.config.js" || f.name === "vite.config.ts"
+            (f) =>
+              f.name === "vite.config.js" ||
+              f.name === "vite.config.ts" ||
+              f.name === "vite.config.mjs"
           );
-          const hasCRA = files.some((f) => f.name.includes("react-scripts"));
+          const hasCRA = files.some(
+            (f) =>
+              f.name === "package.json" &&
+              (f.content.includes("react-scripts") ||
+                f.content.includes("react-dev-utils"))
+          );
           const hasAngular = files.some((f) => f.name === "angular.json");
           const hasVue = files.some(
             (f) =>
               f.name === "vue.config.js" ||
-              (f.name === "vite.config.js" &&
-                files.some(
-                  (f) =>
-                    f.name === "package.json" && f.content.includes('"vue"')
-                ))
+              (f.name === "package.json" &&
+                (f.content.includes('"vue"') || f.content.includes("'vue'")))
           );
-
           // Determine project type
-          let projectType = "Unknown";
-          let framework = "Unknown";
-          let structure = "Unknown";
-
           if (hasNext) {
             projectType = "SSR/SSG";
             framework = "Next.js";
@@ -76,11 +123,10 @@ function analyzeZipProject(zipData) {
           } else if (hasCRA) {
             projectType = "SPA";
             framework = "React (CRA)";
-          } else if (
-            files.some(
-              (f) => f.name === "package.json" && f.content.includes('"react"')
-            )
-          ) {
+          } else if (hasVite && hasReactDependency) {
+            projectType = "SPA/SSR";
+            framework = "React (Vite)";
+          } else if (hasReactDependency || hasReactInProject) {
             projectType = "SPA";
             framework = "React";
           }
@@ -144,6 +190,7 @@ function analyzeZipProject(zipData) {
               totalFiles: files.length,
             },
             projectName,
+            packageJson,
           });
         })
         .catch(reject);
