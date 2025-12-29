@@ -124,6 +124,41 @@ function renderResultsHTML(result) {
     "</strong></div>";
   html += "</div></div>";
 
+  // Add architecture section after project name
+  html += `
+    <div style="margin: 16px 0; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #4b5563; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📐</span> Архітектура проекту
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Тип проекту</div>
+                <div style="font-weight: 500; color: #111827;">${
+                  result.architecture?.projectType || "Невідомо"
+                }</div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Фреймворк</div>
+                <div style="font-weight: 500; color: #111827;">${
+                  result.architecture?.framework || "Невідомо"
+                }</div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Структура</div>
+                <div style="font-weight: 500; color: #111827;">${
+                  result.architecture?.structure || "Невідомо"
+                }</div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Рівень вкладеності</div>
+                <div style="font-weight: 500; color: #111827;">${
+                  result.architecture?.nestingLevel || "0"
+                }</div>
+            </div>
+        </div>
+    </div>
+  `;
+
   html +=
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">';
 
@@ -204,77 +239,6 @@ function renderDetailedBlocks(result) {
   } = result;
 
   let html = "";
-
-  // Display TypeScript Types Section
-  if (typesAnalysis.stats.totalTypes > 0) {
-    html += `
-    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
-      <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">
-        <span style="color:#10b981;">📊 TypeScript Types & Interfaces</span>
-        <span style="font-size:11px;background:#d1fae5;color:#065f46;padding:4px 8px;border-radius:4px;">
-          ${typesAnalysis.stats.totalTypes} total (${typesAnalysis.stats.totalInterfaces} interfaces, ${typesAnalysis.stats.totalTypeAliases} types)
-        </span>
-      </h3>
-      <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #fefefe;">
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-  `;
-
-    typesAnalysis.allTypes.forEach((type) => {
-      const typeIcon = type.type === "interface" ? "🟣" : "🔷";
-      html += `
-      <div style="background: #f9fafb; border-radius: 6px; padding: 12px; border: 1px solid #e5e7eb; width: 100%; box-sizing: border-box;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;">
-          <div>
-            <span style="font-weight: 600; color: #111827;">${typeIcon} ${escapeHTML(
-        type.name
-      )}</span>
-            <span style="color: #6b7280; font-size: 11px; margin-left: 6px;">${
-              type.type
-            }</span>
-          </div>
-          <div style="font-size: 11px; color: #6b7280;">
-            ${escapeHTML(type.file.split("/").pop())}:${type.line}
-          </div>
-        </div>
-
-        <div style="margin-bottom: 8px;">
-          <pre style="font-size: 12px; color: #4b5563; font-family: 'Courier New', monospace;
-                      background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e5e7eb;
-                      max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-word;">
-${escapeHTML(type.content)}
-          </pre>
-        </div>
-
-        ${
-          type.dependencies && type.dependencies.length > 0
-            ? `
-          <div style="font-size: 11px; color: #6b7280; margin-top: 8px;">
-            <div style="color: #6b7280; font-size: 11px; margin-bottom: 4px;">Dependencies:</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-              ${type.dependencies
-                .map(
-                  (dep) =>
-                    `<span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; 
-                             border-radius: 4px; font-size: 10px; white-space: nowrap;">
-                  ${escapeHTML(dep.name)}
-                </span>`
-                )
-                .join("")}
-            </div>
-          </div>
-        `
-            : ""
-        }
-      </div>
-    `;
-    });
-
-    html += `
-        </div>
-      </div>
-    </div>
-  `;
-  }
 
   if (unusedCSS.length > 0) {
     html +=
@@ -619,42 +583,6 @@ ${escapeHTML(type.content)}
         html += "</div>";
       }
 
-      // if (hasParams) {
-      //   html +=
-      //     '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">';
-      //   if (params.body && params.body.length) {
-      //     html +=
-      //       '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">📦 Body:</span> ';
-      //     html +=
-      //       '<span style="font-size:10px;color:' +
-      //       colors.text +
-      //       ';">' +
-      //       params.body.join(", ") +
-      //       "</span></div>";
-      //   }
-      //   if (params.query && params.query.length) {
-      //     html +=
-      //       '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🔍 Query:</span> ';
-      //     html +=
-      //       '<span style="font-size:10px;color:' +
-      //       colors.text +
-      //       ';">' +
-      //       params.query.join(", ") +
-      //       "</span></div>";
-      //   }
-      //   if (params.headers && params.headers.length) {
-      //     html +=
-      //       '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">📋 Headers:</span> ';
-      //     html +=
-      //       '<span style="font-size:10px;color:' +
-      //       colors.text +
-      //       ';">' +
-      //       params.headers.join(", ") +
-      //       "</span></div>";
-      //   }
-      //   html += "</div>";
-      // }
-
       if (route.files && route.files.length > 0) {
         html += '<div style="margin-top:8px;font-size:10px;color:#6b7280;">';
         const filesList = route.files.slice(0, 3).join(", ");
@@ -744,6 +672,77 @@ ${escapeHTML(type.content)}
       html += "</div>";
     });
     html += "</div></div>";
+  }
+
+  // Display TypeScript Types Section
+  if (typesAnalysis.stats.totalTypes > 0) {
+    html += `
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">
+        <span style="color:#10b981;">📊 TypeScript Types & Interfaces</span>
+        <span style="font-size:11px;background:#d1fae5;color:#065f46;padding:4px 8px;border-radius:4px;">
+          ${typesAnalysis.stats.totalTypes} total (${typesAnalysis.stats.totalInterfaces} interfaces, ${typesAnalysis.stats.totalTypeAliases} types)
+        </span>
+      </h3>
+      <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #fefefe;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+  `;
+
+    typesAnalysis.allTypes.forEach((type) => {
+      const typeIcon = type.type === "interface" ? "🟣" : "🔷";
+      html += `
+      <div style="background: #f9fafb; border-radius: 6px; padding: 12px; border: 1px solid #e5e7eb; width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;">
+          <div>
+            <span style="font-weight: 600; color: #111827;">${typeIcon} ${escapeHTML(
+        type.name
+      )}</span>
+            <span style="color: #6b7280; font-size: 11px; margin-left: 6px;">${
+              type.type
+            }</span>
+          </div>
+          <div style="font-size: 11px; color: #6b7280;">
+            ${escapeHTML(type.file.split("/").pop())}:${type.line}
+          </div>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <pre style="font-size: 12px; color: #4b5563; font-family: 'Courier New', monospace;
+                      background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e5e7eb;
+                      max-height: 300px; overflow: auto; white-space: pre-wrap; word-break: break-word;">
+${escapeHTML(type.content)}
+          </pre>
+        </div>
+
+        ${
+          type.dependencies && type.dependencies.length > 0
+            ? `
+          <div style="font-size: 11px; color: #6b7280; margin-top: 8px;">
+            <div style="color: #6b7280; font-size: 11px; margin-bottom: 4px;">Dependencies:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+              ${type.dependencies
+                .map(
+                  (dep) =>
+                    `<span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; 
+                             border-radius: 4px; font-size: 10px; white-space: nowrap;">
+                  ${escapeHTML(dep.name)}
+                </span>`
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
+    });
+
+    html += `
+        </div>
+      </div>
+    </div>
+  `;
   }
 
   const nothingFound =

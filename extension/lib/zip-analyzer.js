@@ -37,6 +37,82 @@ function analyzeZipProject(zipData) {
             }
           }
 
+          // Analyze project architecture
+          const hasNext = files.some(
+            (f) =>
+              f.name === "next.config.js" ||
+              f.name === "next.config.mjs" ||
+              f.name === "next.config.ts"
+          );
+          const hasVite = files.some(
+            (f) => f.name === "vite.config.js" || f.name === "vite.config.ts"
+          );
+          const hasCRA = files.some((f) => f.name.includes("react-scripts"));
+          const hasAngular = files.some((f) => f.name === "angular.json");
+          const hasVue = files.some(
+            (f) =>
+              f.name === "vue.config.js" ||
+              (f.name === "vite.config.js" &&
+                files.some(
+                  (f) =>
+                    f.name === "package.json" && f.content.includes('"vue"')
+                ))
+          );
+
+          // Determine project type
+          let projectType = "Unknown";
+          let framework = "Unknown";
+          let structure = "Unknown";
+
+          if (hasNext) {
+            projectType = "SSR/SSG";
+            framework = "Next.js";
+          } else if (hasVue) {
+            projectType = "SPA/SSR";
+            framework = "Vue.js";
+          } else if (hasAngular) {
+            projectType = "SPA";
+            framework = "Angular";
+          } else if (hasCRA) {
+            projectType = "SPA";
+            framework = "React (CRA)";
+          } else if (
+            files.some(
+              (f) => f.name === "package.json" && f.content.includes('"react"')
+            )
+          ) {
+            projectType = "SPA";
+            framework = "React";
+          }
+
+          // Analyze project structure
+          const srcFiles = files.filter((f) => f.name.startsWith("src/"));
+          const hasFeatureFolders = srcFiles.some((f) =>
+            f.name.match(/src\/[^/]+\/components\//)
+          );
+          const hasLayerFolders = srcFiles.some((f) =>
+            f.name.match(/src\/(components|pages|hooks|utils|services)\//)
+          );
+
+          if (hasFeatureFolders) {
+            structure = "Feature-based";
+          } else if (hasLayerFolders) {
+            structure = "Layer-based";
+          }
+
+          // Calculate nesting level
+          const maxNesting = files.reduce((max, file) => {
+            const depth = (file.name.match(/\//g) || []).length;
+            return Math.max(max, depth);
+          }, 0);
+
+          const architectureInfo = {
+            projectType,
+            framework,
+            structure,
+            nestingLevel: maxNesting,
+          };
+
           const cssAnalysis = analyzeCSSClasses(cssFiles, jsFiles);
           const functionAnalysis = analyzeFunctions(jsFiles);
           const variableAnalysis = analyzeVariables(jsFiles);
@@ -48,6 +124,7 @@ function analyzeZipProject(zipData) {
           const typesAnalysis = analyzeTypeScriptTypes(files);
 
           resolve({
+            architecture: architectureInfo,
             unusedCSS: cssAnalysis.unused,
             unusedFunctions: functionAnalysis.unused,
             unusedVariables: variableAnalysis.unused,
@@ -476,24 +553,48 @@ function analyzeVariables(jsFiles) {
   return { total: allVariables.size, unused: unused };
 }
 
-function analyzeImages(imageFiles, jsFiles, cssFiles) {
+function analyzeImages(imageFiles, jsFiles, cssFiles, htmlFiles = []) {
   const allImages = [];
   const usedImages = new Set();
 
+  // Збираємо всі зображення з різними варіантами шляхів
   imageFiles.forEach(function (file) {
     const fileName = file.name.split("/").pop();
-    allImages.push({ name: fileName, path: file.name });
+    const relativePath = file.name;
+
+    allImages.push({
+      name: fileName,
+      path: relativePath,
+      // Додаткові варіанти для пошуку
+      searchVariants: generateSearchVariants(fileName, relativePath),
+    });
   });
 
   console.log("🖼️ Found", allImages.length, "images");
 
-  const allContent = jsFiles
-    .concat(cssFiles)
-    .map((f) => f.content)
-    .join(" ");
+  // Об'єднуємо контент з усіх файлів
+  const allFiles = [...jsFiles, ...cssFiles, ...htmlFiles];
+  const allContent = allFiles.map((f) => f.content || "").join(" ");
 
+  // Покращений пошук використання зображень
   allImages.forEach(function (img) {
-    if (allContent.includes(img.name)) {
+    // Перевіряємо всі можливі варіанти посилання на зображення
+    const isUsed = img.searchVariants.some((variant) => {
+      // Перевірка з урахуванням можливих кавичок, дужок тощо
+      const patterns = [
+        variant, // exact match
+        `"${variant}"`, // в подвійних лапках
+        `'${variant}'`, // в одинарних лапках
+        `\`${variant}\``, // в бектіках
+        `(${variant})`, // в дужках (CSS url)
+        `/${variant}`, // з слешем
+        variant.replace(/\\/g, "/"), // заміна бекслешів
+      ];
+
+      return patterns.some((pattern) => allContent.includes(pattern));
+    });
+
+    if (isUsed) {
       usedImages.add(img.name);
     }
   });
@@ -501,9 +602,49 @@ function analyzeImages(imageFiles, jsFiles, cssFiles) {
   console.log("🖼️ Used", usedImages.size, "images");
 
   const unused = allImages.filter((img) => !usedImages.has(img.name));
-
   console.log("🖼️ Unused", unused.length, "images");
-  return { total: allImages.length, unused: unused };
+
+  return {
+    total: allImages.length,
+    unused: unused,
+    used: usedImages.size,
+    unusedDetails: unused.map((img) => ({ name: img.name, path: img.path })),
+  };
+}
+
+// Допоміжна функція для генерації варіантів пошуку
+function generateSearchVariants(fileName, fullPath) {
+  const variants = new Set();
+
+  // Повне ім'я файлу
+  variants.add(fileName);
+
+  // Ім'я без розширення (для dynamic imports)
+  const nameWithoutExt = fileName.replace(/\.[^.]+$/, "");
+  variants.add(nameWithoutExt);
+
+  // Повний шлях
+  variants.add(fullPath);
+
+  // Відносні шляхи
+  const pathParts = fullPath.split("/");
+  for (let i = 0; i < pathParts.length; i++) {
+    variants.add(pathParts.slice(i).join("/"));
+    variants.add("./" + pathParts.slice(i).join("/"));
+    variants.add("../" + pathParts.slice(i).join("/"));
+  }
+
+  // URL-encoded варіанти
+  variants.add(encodeURIComponent(fileName));
+
+  // Варіанти з різними слешами
+  fullPath.split("/").forEach((part, idx, arr) => {
+    if (idx > 0) {
+      variants.add(arr.slice(idx).join("/"));
+    }
+  });
+
+  return Array.from(variants);
 }
 
 function findDuplicateFunctions(jsFiles) {
