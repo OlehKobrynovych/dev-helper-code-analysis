@@ -191,6 +191,7 @@ function analyzeZipProject(zipData) {
             },
             projectName,
             packageJson,
+            files,
           });
         })
         .catch(reject);
