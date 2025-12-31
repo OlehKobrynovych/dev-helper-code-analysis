@@ -833,4 +833,385 @@ window.Analyzers = {
 
     return pages;
   },
+
+  // Аналіз невикористаних експортів
+  analyzeUnusedExports: function (jsFiles) {
+    const allExports = new Map();
+    const usedExports = new Set();
+
+    // Збираємо всі експорти
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      // export function/const/let/var
+      const namedExports = content.matchAll(
+        /export\s+(?:const|let|var|function|class|interface|type|enum)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g
+      );
+      for (const match of namedExports) {
+        allExports.set(match[1], file.name);
+      }
+
+      // export { name1, name2 }
+      const exportBlocks = content.matchAll(/export\s*\{([^}]+)\}/g);
+      for (const match of exportBlocks) {
+        const names = match[1].split(",");
+        names.forEach((name) => {
+          const cleanName = name
+            .trim()
+            .split(/\s+as\s+/)[0]
+            .trim();
+          if (cleanName) allExports.set(cleanName, file.name);
+        });
+      }
+    });
+
+    // Перевіряємо використання
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      allExports.forEach((location, exportName) => {
+        // import { exportName }
+        if (new RegExp(`import\\s*\\{[^}]*\\b${exportName}\\b`).test(content)) {
+          usedExports.add(exportName);
+        }
+        // import exportName
+        else if (new RegExp(`import\\s+${exportName}\\b`).test(content)) {
+          usedExports.add(exportName);
+        }
+        // Використання в коді
+        else if (new RegExp(`\\b${exportName}\\b`).test(content)) {
+          usedExports.add(exportName);
+        }
+      });
+    });
+
+    const unused = [];
+    allExports.forEach((location, exportName) => {
+      if (!usedExports.has(exportName)) {
+        unused.push({ name: exportName, location });
+      }
+    });
+
+    console.log("📤 Exports:", allExports.size, "Unused:", unused.length);
+    return { total: allExports.size, unused };
+  },
+
+  // Аналіз невикористаних React компонентів
+  analyzeUnusedComponents: function (jsFiles) {
+    const allComponents = new Map();
+    const usedComponents = new Set();
+
+    // Збираємо всі компоненти (починаються з великої літери)
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      // function Component() або const Component = () => або const Component = function()
+      const componentMatches = content.matchAll(
+        /(?:export\s+)?(?:const|function)\s+([A-Z][a-zA-Z0-9_$]*)\s*[=\(]/g
+      );
+      for (const match of componentMatches) {
+        const componentName = match[1];
+        const matchIndex = match.index;
+
+        // Отримуємо контекст навколо оголошення (100 символів після)
+        const contextAfter = content.substring(matchIndex, matchIndex + 100);
+
+        // Перевіряємо чи це React компонент:
+        // 1. Функція з return JSX: return <div> або return (<div>
+        // 2. Arrow function з JSX: = () => <div> або = () => (<div>
+        // 3. Функція з React.createElement
+        const isComponent =
+          /=\s*\([^)]*\)\s*=>\s*[(<]/.test(contextAfter) || // Arrow function з JSX
+          /function[^{]*\{[^}]*return\s*[(<]/.test(contextAfter) || // Function з return JSX
+          /React\.createElement/.test(contextAfter) || // React.createElement
+          /jsx\(/.test(contextAfter); // jsx() runtime
+
+        // Виключаємо константи (всі літери великі + підкреслення)
+        const isConstant = /^[A-Z][A-Z0-9_]*$/.test(componentName);
+
+        // Виключаємо константи які присвоюються примітивним значенням або об'єктам
+        const isPrimitiveAssignment =
+          /=\s*['"`]/.test(contextAfter) || // Рядок
+          /=\s*\d/.test(contextAfter) || // Число
+          /=\s*\{[^}]*:/.test(contextAfter) || // Об'єкт з властивостями
+          /=\s*\[/.test(contextAfter) || // Масив
+          /=\s*true|false|null|undefined/.test(contextAfter); // Boolean/null/undefined
+
+        if (isComponent && !isConstant && !isPrimitiveAssignment) {
+          allComponents.set(componentName, file.name);
+        }
+      }
+    });
+
+    // Перевіряємо використання
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      allComponents.forEach((location, componentName) => {
+        // <ComponentName або <ComponentName/>
+        if (new RegExp(`<${componentName}(?:\\s|/|>)`).test(content)) {
+          usedComponents.add(componentName);
+        }
+        // import { ComponentName }
+        else if (
+          new RegExp(`import\\s*\\{[^}]*\\b${componentName}\\b`).test(content)
+        ) {
+          usedComponents.add(componentName);
+        }
+        // Використання як компонент: component={ComponentName}
+        else if (
+          new RegExp(`component\\s*=\\s*\\{?\\s*${componentName}\\s*\\}?`).test(
+            content
+          )
+        ) {
+          usedComponents.add(componentName);
+        }
+      });
+    });
+
+    const unused = [];
+    allComponents.forEach((location, componentName) => {
+      if (!usedComponents.has(componentName)) {
+        unused.push({ name: componentName, location });
+      }
+    });
+
+    console.log("⚛️ Components:", allComponents.size, "Unused:", unused.length);
+    return { total: allComponents.size, unused };
+  },
+
+  // Аналіз невикористаних хуків
+  analyzeUnusedHooks: function (jsFiles) {
+    const allHooks = new Map();
+    const usedHooks = new Set();
+
+    // Збираємо всі хуки (починаються з use)
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      // const useHook = () => або function useHook()
+      const hookMatches = content.matchAll(
+        /(?:export\s+)?(?:const|function)\s+(use[A-Z][a-zA-Z0-9_$]*)\s*[=\(]/g
+      );
+      for (const match of hookMatches) {
+        allHooks.set(match[1], file.name);
+      }
+    });
+
+    // Перевіряємо використання
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      allHooks.forEach((location, hookName) => {
+        // const data = useHook()
+        if (new RegExp(`\\b${hookName}\\s*\\(`).test(content)) {
+          usedHooks.add(hookName);
+        }
+        // import { useHook }
+        else if (
+          new RegExp(`import\\s*\\{[^}]*\\b${hookName}\\b`).test(content)
+        ) {
+          usedHooks.add(hookName);
+        }
+      });
+    });
+
+    const unused = [];
+    allHooks.forEach((location, hookName) => {
+      if (!usedHooks.has(hookName)) {
+        unused.push({ name: hookName, location });
+      }
+    });
+
+    console.log("🪝 Hooks:", allHooks.size, "Unused:", unused.length);
+    return { total: allHooks.size, unused };
+  },
+
+  // Аналіз невикористаних енумів та інтерфейсів
+  analyzeUnusedEnumsInterfaces: function (jsFiles) {
+    const allTypes = new Map();
+    const usedTypes = new Set();
+    const typeDefinitions = new Map(); // Зберігаємо повні визначення типів
+
+    // Збираємо всі enum та interface з їх визначеннями
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      // enum Name
+      const enumMatches = content.matchAll(
+        /(?:export\s+)?enum\s+([A-Z][a-zA-Z0-9_$]*)/g
+      );
+      for (const match of enumMatches) {
+        allTypes.set(match[1], { location: file.name, type: "enum" });
+      }
+
+      // interface Name
+      const interfaceMatches = content.matchAll(
+        /(?:export\s+)?interface\s+([A-Z][a-zA-Z0-9_$]*)/g
+      );
+      for (const match of interfaceMatches) {
+        allTypes.set(match[1], { location: file.name, type: "interface" });
+      }
+
+      // type Name = ... (зберігаємо визначення)
+      const typeMatches = content.matchAll(
+        /(?:export\s+)?type\s+([A-Z][a-zA-Z0-9_$]*)\s*=\s*([^;]+);/g
+      );
+      for (const match of typeMatches) {
+        const typeName = match[1];
+        const typeDefinition = match[2];
+        allTypes.set(typeName, { location: file.name, type: "type" });
+        typeDefinitions.set(typeName, typeDefinition);
+      }
+    });
+
+    // Перевіряємо використання в коді
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      allTypes.forEach((info, typeName) => {
+        // Використання в типах: : TypeName або <TypeName>
+        if (new RegExp(`[:<]\\s*${typeName}\\b`).test(content)) {
+          usedTypes.add(typeName);
+        }
+        // Використання в дженериках: TypeName<...> або Array<TypeName>
+        else if (new RegExp(`\\b${typeName}\\s*<`).test(content)) {
+          usedTypes.add(typeName);
+        }
+        // Використання в масивах: TypeName[]
+        else if (new RegExp(`\\b${typeName}\\s*\\[`).test(content)) {
+          usedTypes.add(typeName);
+        }
+        // import { TypeName }
+        else if (
+          new RegExp(`import\\s*\\{[^}]*\\b${typeName}\\b`).test(content)
+        ) {
+          usedTypes.add(typeName);
+        }
+        // Використання в union/intersection: Type1 | Type2 або Type1 & Type2
+        else if (
+          new RegExp(`[|&]\\s*${typeName}\\b`).test(content) ||
+          new RegExp(`\\b${typeName}\\s*[|&]`).test(content)
+        ) {
+          usedTypes.add(typeName);
+        }
+        // Використання як значення (для enum)
+        else if (
+          info.type === "enum" &&
+          new RegExp(`\\b${typeName}\\.`).test(content)
+        ) {
+          usedTypes.add(typeName);
+        }
+      });
+    });
+
+    // Перевіряємо залежності між типами (type User = TUser | TAdmin)
+    typeDefinitions.forEach((definition, typeName) => {
+      // Якщо цей тип використовується, позначаємо всі типи в його визначенні як використані
+      if (usedTypes.has(typeName)) {
+        allTypes.forEach((info, otherTypeName) => {
+          // Шукаємо інші типи в визначенні
+          if (new RegExp(`\\b${otherTypeName}\\b`).test(definition)) {
+            usedTypes.add(otherTypeName);
+          }
+        });
+      }
+    });
+
+    // Повторюємо перевірку залежностей (для ланцюжків залежностей)
+    let changed = true;
+    let iterations = 0;
+    while (changed && iterations < 10) {
+      changed = false;
+      iterations++;
+
+      typeDefinitions.forEach((definition, typeName) => {
+        if (usedTypes.has(typeName)) {
+          allTypes.forEach((info, otherTypeName) => {
+            if (
+              !usedTypes.has(otherTypeName) &&
+              new RegExp(`\\b${otherTypeName}\\b`).test(definition)
+            ) {
+              usedTypes.add(otherTypeName);
+              changed = true;
+            }
+          });
+        }
+      });
+    }
+
+    const unused = [];
+    allTypes.forEach((info, typeName) => {
+      if (!usedTypes.has(typeName)) {
+        unused.push({
+          name: typeName,
+          location: info.location,
+          type: info.type,
+        });
+      }
+    });
+
+    console.log("🔷 Types:", allTypes.size, "Unused:", unused.length);
+    return { total: allTypes.size, unused };
+  },
+
+  // Аналіз невикористаних API ендпоінтів
+  analyzeUnusedAPIEndpoints: function (jsFiles) {
+    const allEndpoints = new Map();
+    const usedEndpoints = new Set();
+
+    // Збираємо всі API ендпоінти
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      // fetch('/api/endpoint')
+      const fetchMatches = content.matchAll(
+        /fetch\s*\(\s*['"`]([^'"`]+)['"`]/g
+      );
+      for (const match of fetchMatches) {
+        if (match[1].includes("/api/")) {
+          allEndpoints.set(match[1], file.name);
+        }
+      }
+
+      // axios.get('/api/endpoint')
+      const axiosMatches = content.matchAll(
+        /axios\.\w+\s*\(\s*['"`]([^'"`]+)['"`]/g
+      );
+      for (const match of axiosMatches) {
+        if (match[1].includes("/api/")) {
+          allEndpoints.set(match[1], file.name);
+        }
+      }
+
+      // API route definitions (Next.js)
+      if (file.name.includes("/api/")) {
+        const routePath = file.name
+          .replace(/.*\/api\//, "/api/")
+          .replace(/\.(js|ts|jsx|tsx)$/, "");
+        allEndpoints.set(routePath, file.name);
+      }
+    });
+
+    // Перевіряємо використання
+    jsFiles.forEach((file) => {
+      const content = file.content;
+
+      allEndpoints.forEach((location, endpoint) => {
+        if (content.includes(endpoint)) {
+          usedEndpoints.add(endpoint);
+        }
+      });
+    });
+
+    const unused = [];
+    allEndpoints.forEach((location, endpoint) => {
+      if (!usedEndpoints.has(endpoint)) {
+        unused.push({ name: endpoint, location });
+      }
+    });
+
+    console.log("🌐 Endpoints:", allEndpoints.size, "Unused:", unused.length);
+    return { total: allEndpoints.size, unused };
+  },
 };

@@ -278,12 +278,28 @@ window.ZipHandler = {
             const typesAnalysis =
               window.Analyzers.analyzeTypeScriptTypes(files);
 
+            // Нові аналізатори
+            const exportsAnalysis =
+              window.Analyzers.analyzeUnusedExports(jsFiles);
+            const componentsAnalysis =
+              window.Analyzers.analyzeUnusedComponents(jsFiles);
+            const hooksAnalysis = window.Analyzers.analyzeUnusedHooks(jsFiles);
+            const enumsInterfacesAnalysis =
+              window.Analyzers.analyzeUnusedEnumsInterfaces(jsFiles);
+            const apiEndpointsAnalysis =
+              window.Analyzers.analyzeUnusedAPIEndpoints(jsFiles);
+
             resolve({
               architecture: architectureInfo,
               unusedCSS: cssAnalysis.unused,
               unusedFunctions: functionAnalysis.unused,
               unusedVariables: variableAnalysis.unused,
               unusedImages: imageAnalysis.unused,
+              unusedExports: exportsAnalysis.unused,
+              unusedComponents: componentsAnalysis.unused,
+              unusedHooks: hooksAnalysis.unused,
+              unusedEnumsInterfaces: enumsInterfacesAnalysis.unused,
+              unusedAPIEndpoints: apiEndpointsAnalysis.unused,
               duplicateFunctions: duplicateFunctions,
               apiRoutes: apiRoutes,
               fileTypes: fileTypesInfo,
@@ -296,6 +312,11 @@ window.ZipHandler = {
                 totalFunctions: functionAnalysis.total,
                 totalVariables: variableAnalysis.total,
                 totalImages: imageAnalysis.total,
+                totalExports: exportsAnalysis.total,
+                totalComponents: componentsAnalysis.total,
+                totalHooks: hooksAnalysis.total,
+                totalEnumsInterfaces: enumsInterfacesAnalysis.total,
+                totalAPIEndpoints: apiEndpointsAnalysis.total,
                 totalFiles: files.length,
               },
               projectName,

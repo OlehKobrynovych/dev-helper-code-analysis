@@ -64,6 +64,11 @@ function renderDetailedBlocks(result) {
     unusedFunctions = [],
     unusedVariables = [],
     unusedImages = [],
+    unusedExports = [],
+    unusedComponents = [],
+    unusedHooks = [],
+    unusedEnumsInterfaces = [],
+    unusedAPIEndpoints = [],
     duplicateFunctions = [],
     apiRoutes = [],
     pages = [],
@@ -1091,6 +1096,167 @@ function renderDetailedBlocks(result) {
     html += "</div></div>";
   }
 
+  // Невикористані експорти
+  if (unusedExports.length > 0) {
+    html +=
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html += '<span style="color:#8b5cf6;">📤 Невикористані експорти</span>';
+    html +=
+      '<span style="font-size:11px;background:#ede9fe;color:#6b21a8;padding:4px 8px;border-radius:4px;">' +
+      unusedExports.length +
+      "</span>";
+    html += "</h3>";
+    html += '<div style="max-height:200px;overflow-y:auto;">';
+    unusedExports.forEach((item) => {
+      const location = item.location || "невідомо";
+      html +=
+        '<div style="padding:8px;background:#f5f3ff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#6b21a8;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
+    });
+    html += "</div></div>";
+  }
+
+  // Невикористані React компоненти
+  if (unusedComponents.length > 0) {
+    html +=
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html +=
+      '<span style="color:#06b6d4;">⚛️ Невикористані React компоненти</span>';
+    html +=
+      '<span style="font-size:11px;background:#cffafe;color:#0e7490;padding:4px 8px;border-radius:4px;">' +
+      unusedComponents.length +
+      "</span>";
+    html += "</h3>";
+    html += '<div style="max-height:200px;overflow-y:auto;">';
+    unusedComponents.forEach((item) => {
+      const location = item.location || "невідомо";
+      html +=
+        '<div style="padding:8px;background:#ecfeff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#0e7490;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
+    });
+    html += "</div></div>";
+  }
+
+  // Невикористані хуки
+  if (unusedHooks.length > 0) {
+    html +=
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html += '<span style="color:#14b8a6;">🪝 Невикористані хуки</span>';
+    html +=
+      '<span style="font-size:11px;background:#ccfbf1;color:#0f766e;padding:4px 8px;border-radius:4px;">' +
+      unusedHooks.length +
+      "</span>";
+    html += "</h3>";
+    html += '<div style="max-height:200px;overflow-y:auto;">';
+    unusedHooks.forEach((item) => {
+      const location = item.location || "невідомо";
+      html +=
+        '<div style="padding:8px;background:#f0fdfa;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#0f766e;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
+    });
+    html += "</div></div>";
+  }
+
+  // Невикористані enum/interface/type
+  if (unusedEnumsInterfaces.length > 0) {
+    html +=
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html +=
+      '<span style="color:#a855f7;">🔷 Невикористані enum / interface / type</span>';
+    html +=
+      '<span style="font-size:11px;background:#f3e8ff;color:#7e22ce;padding:4px 8px;border-radius:4px;">' +
+      unusedEnumsInterfaces.length +
+      "</span>";
+    html += "</h3>";
+    html += '<div style="max-height:200px;overflow-y:auto;">';
+    unusedEnumsInterfaces.forEach((item) => {
+      const location = item.location || "невідомо";
+      const typeLabel = item.type || "type";
+      html +=
+        '<div style="padding:8px;background:#faf5ff;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+      html +=
+        '<code style="font-family:monospace;color:#7e22ce;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="font-size:9px;background:#a855f7;color:#fff;padding:2px 6px;border-radius:3px;">' +
+        typeLabel +
+        "</span>";
+      html += "</div>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
+    });
+    html += "</div></div>";
+  }
+
+  // Невикористані API ендпоінти
+  if (unusedAPIEndpoints.length > 0) {
+    html +=
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html +=
+      '<span style="color:#ef4444;">🌐 Невикористані API ендпоінти</span>';
+    html +=
+      '<span style="font-size:11px;background:#fee2e2;color:#991b1b;padding:4px 8px;border-radius:4px;">' +
+      unusedAPIEndpoints.length +
+      "</span>";
+    html += "</h3>";
+    html +=
+      '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">API роути, які не використовуються в коді</p>';
+    html += '<div style="max-height:200px;overflow-y:auto;">';
+    unusedAPIEndpoints.forEach((item) => {
+      const location = item.location || "невідомо";
+      html +=
+        '<div style="padding:8px;background:#fef2f2;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="font-weight:bold;color:#991b1b;margin-bottom:4px;">' +
+        item.name +
+        "</div>";
+      html +=
+        '<div style="color:#6b7280;font-size:10px;">📄 ' + location + "</div>";
+      html += "</div>";
+    });
+    html += "</div></div>";
+  }
+
   if (duplicateFunctions.length > 0) {
     html +=
       '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
@@ -1426,6 +1592,11 @@ ${window.Utils.escapeHTML(type.content)}
     unusedFunctions.length === 0 &&
     unusedVariables.length === 0 &&
     unusedImages.length === 0 &&
+    unusedExports.length === 0 &&
+    unusedComponents.length === 0 &&
+    unusedHooks.length === 0 &&
+    unusedEnumsInterfaces.length === 0 &&
+    unusedAPIEndpoints.length === 0 &&
     duplicateFunctions.length === 0;
 
   if (nothingFound) {
@@ -1453,6 +1624,24 @@ ${window.Utils.escapeHTML(type.content)}
     }
     if (unusedVariables.length > 0) {
       html += "<li>Видаліть невикористані змінні та константи</li>";
+    }
+    if (unusedExports.length > 0) {
+      html +=
+        "<li>Видаліть невикористані експорти для зменшення розміру бандлу</li>";
+    }
+    if (unusedComponents.length > 0) {
+      html += "<li>Видаліть невикористані React компоненти</li>";
+    }
+    if (unusedHooks.length > 0) {
+      html +=
+        "<li>Видаліть невикористані хуки або перемістіть їх у бібліотеку</li>";
+    }
+    if (unusedEnumsInterfaces.length > 0) {
+      html += "<li>Видаліть невикористані типи, інтерфейси та енуми</li>";
+    }
+    if (unusedAPIEndpoints.length > 0) {
+      html +=
+        "<li>Видаліть або задокументуйте невикористані API ендпоінти</li>";
     }
     html += '<li>Використовуйте ESLint з правилом "no-unused-vars"</li>';
     html +=
