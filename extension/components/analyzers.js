@@ -1,0 +1,764 @@
+// Analyzers - всі функції аналізу коду
+window.Analyzers = {
+  analyzeCSSClasses: function (cssFiles, jsFiles) {
+    const allClasses = new Set();
+    const classLocations = {};
+
+    cssFiles.forEach(function (file) {
+      // 1. Звичайні CSS класи: .className {
+      const matches = file.content.matchAll(
+        /\.([a-zA-Z_][a-zA-Z0-9_-]*)\s*\{/g
+      );
+      for (const match of matches) {
+        const className = "." + match[1];
+        allClasses.add(className);
+        if (!classLocations[className]) classLocations[className] = [];
+        classLocations[className].push(file.name);
+      }
+
+      // 2. SCSS вкладені класи: &.className {
+      const nestedMatches = file.content.matchAll(
+        /&\.([a-zA-Z_][a-zA-Z0-9_-]*)\s*\{/g
+      );
+      for (const match of nestedMatches) {
+        const className = "." + match[1];
+        allClasses.add(className);
+        if (!classLocations[className]) classLocations[className] = [];
+        classLocations[className].push(file.name);
+      }
+
+      // Логування для дебагу
+      if (
+        file.name.includes("test") ||
+        file.content.includes("header-test") ||
+        file.content.includes("minimal")
+      ) {
+        console.log("🔍 CSS file:", file.name);
+        if (file.content.includes("minimal")) {
+          console.log("🔍 Contains 'minimal' class");
+        }
+      }
+    });
+
+    const usedClasses = new Set();
+    jsFiles.forEach(function (file) {
+      const content = file.content;
+
+      // 1. Звичайні класи: className="header"
+      const classNameMatches = content.matchAll(
+        /className\s*=\s*["']([^"']+)["']/g
+      );
+      for (const match of classNameMatches) {
+        match[1].split(/\s+/).forEach((cls) => {
+          if (cls) {
+            usedClasses.add("." + cls);
+            if (cls.includes("test")) {
+              console.log("🔍 Found used class:", cls, "in", file.name);
+            }
+          }
+        });
+      }
+
+      // 2. HTML класи: class="header"
+      const classMatches = content.matchAll(/class\s*=\s*["']([^"']+)["']/g);
+      for (const match of classMatches) {
+        match[1].split(/\s+/).forEach((cls) => {
+          if (cls) {
+            usedClasses.add("." + cls);
+            if (cls.includes("test")) {
+              console.log("🔍 Found used class (HTML):", cls, "in", file.name);
+            }
+          }
+        });
+      }
+
+      // 3. CSS Modules: styles.header або className={styles.header}
+      const cssModuleMatches = content.matchAll(
+        /(?:styles|css|classes)\.([a-zA-Z_][a-zA-Z0-9_-]*)/g
+      );
+      for (const match of cssModuleMatches) {
+        usedClasses.add("." + match[1]);
+        if (match[1].includes("test")) {
+          console.log("🔍 Found CSS Module class:", match[1], "in", file.name);
+        }
+      }
+
+      // 4. Рядкові літерали в коді: "minimal", 'compact' (можуть бути назви класів)
+      // Шукаємо в об'єктах типу baseStyles = { minimal: "...", compact: "..." }
+      const stringLiteralMatches = content.matchAll(
+        /["']([a-zA-Z_][a-zA-Z0-9_-]*)["']\s*:/g
+      );
+      for (const match of stringLiteralMatches) {
+        usedClasses.add("." + match[1]);
+        if (match[1] === "minimal" || match[1].includes("test")) {
+          console.log(
+            "🔍 Found string literal class:",
+            match[1],
+            "in",
+            file.name
+          );
+        }
+      }
+
+      // 5. Динамічні класи через змінні: baseStyles[variant]
+      // Якщо є об'єкт з ключами, всі ключі вважаємо використаними
+      if (
+        content.includes("baseStyles") ||
+        content.includes("disclaimerTexts")
+      ) {
+        const objectKeyMatches = content.matchAll(
+          /\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*:/g
+        );
+        for (const match of objectKeyMatches) {
+          usedClasses.add("." + match[1]);
+          if (match[1] === "minimal" || match[1].includes("test")) {
+            console.log(
+              "🔍 Found object key class:",
+              match[1],
+              "in",
+              file.name
+            );
+          }
+        }
+      }
+    });
+
+    const unused = [];
+    allClasses.forEach(function (className) {
+      if (!usedClasses.has(className)) {
+        // Логування для дебагу
+        if (className === ".minimal") {
+          console.log("❌ .minimal marked as UNUSED");
+          console.log(
+            "All used classes:",
+            Array.from(usedClasses).filter((c) => c.includes("minimal"))
+          );
+        }
+        unused.push({
+          name: className,
+          location: classLocations[className][0],
+        });
+      }
+    });
+
+    console.log(
+      "🎨 CSS: Total",
+      allClasses.size,
+      "Used",
+      usedClasses.size,
+      "Unused",
+      unused.length
+    );
+    return { total: allClasses.size, unused: unused };
+  },
+
+  analyzeFunctions: function (jsFiles) {
+    const allFunctions = new Map();
+    const usedFunctions = new Set();
+
+    jsFiles.forEach(function (file) {
+      const content = file.content;
+
+      const funcMatches = content.matchAll(
+        /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g
+      );
+      for (const match of funcMatches) {
+        allFunctions.set(match[1], file.name);
+      }
+
+      const constFuncMatches = content.matchAll(
+        /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s+)?(?:function|\([^)]*\)\s*=>)/g
+      );
+      for (const match of constFuncMatches) {
+        allFunctions.set(match[1], file.name);
+      }
+
+      const exportFuncMatches = content.matchAll(
+        /export\s+(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g
+      );
+      for (const match of exportFuncMatches) {
+        allFunctions.set(match[1], file.name);
+      }
+    });
+
+    console.log("⚡ Found", allFunctions.size, "functions");
+
+    jsFiles.forEach(function (file) {
+      const content = file.content;
+
+      allFunctions.forEach(function (location, funcName) {
+        // Пропускаємо Next.js сторінки (page.js/tsx) та default експорти
+        const isNextPage = location.match(/\/page\.(js|jsx|ts|tsx)$/);
+        const isDefaultExport = new RegExp(
+          "export\\s+default\\s+" + funcName
+        ).test(content);
+
+        if (isNextPage || isDefaultExport) {
+          usedFunctions.add(funcName);
+          return;
+        }
+
+        // Перевірка JSX компонента: <ComponentName або <ComponentName/>
+        if (new RegExp("<" + funcName + "(?:\\s|/|>)").test(content)) {
+          usedFunctions.add(funcName);
+        }
+        // Виклик функції: funcName(
+        else if (new RegExp("\\b" + funcName + "\\s*\\(").test(content)) {
+          usedFunctions.add(funcName);
+        }
+        // Передача як пропс: ={funcName}
+        else if (new RegExp("=\\{\\s*" + funcName + "\\s*\\}").test(content)) {
+          usedFunctions.add(funcName);
+        }
+        // В хуках: useEffect(() => funcName
+        else if (
+          new RegExp(
+            "use(?:Effect|Callback|Memo)[^}]*\\b" + funcName + "\\b"
+          ).test(content)
+        ) {
+          usedFunctions.add(funcName);
+        }
+        // Імпорт: import { funcName }
+        else if (
+          new RegExp("import\\s*\\{[^}]*\\b" + funcName + "\\b").test(content)
+        ) {
+          usedFunctions.add(funcName);
+        }
+        // Експорт: export { funcName }
+        else if (
+          new RegExp("export\\s*\\{[^}]*\\b" + funcName + "\\b").test(content)
+        ) {
+          usedFunctions.add(funcName);
+        }
+      });
+    });
+
+    console.log("⚡ Used", usedFunctions.size, "functions");
+
+    const unused = [];
+
+    // Список популярних бібліотечних функцій для фільтрації
+    const libraryFunctions = new Set([
+      "$",
+      "jQuery",
+      "after",
+      "before",
+      "append",
+      "prepend",
+      "remove",
+      "hide",
+      "show",
+      "$t",
+      "$i18n",
+      "$router",
+      "$store",
+      "$emit",
+      "$on",
+      "$off",
+      "require",
+      "define",
+      "module",
+      "exports",
+      "$d",
+      "$f",
+      "$s",
+      "$c",
+      "$v",
+      "$e",
+      "$a",
+      "$b",
+      "$g",
+      "$h",
+      "$j",
+      "$k",
+      "$l",
+      "$m",
+      "$n",
+      "$o",
+      "$p",
+      "$q",
+      "$r",
+      "$u",
+      "$w",
+      "$x",
+      "$y",
+      "$z",
+    ]);
+
+    allFunctions.forEach(function (location, funcName) {
+      // Фільтруємо бібліотечні функції
+      if (libraryFunctions.has(funcName)) {
+        return;
+      }
+
+      // Фільтруємо функції з 1-2 символів (часто це бібліотеки)
+      if (funcName.length <= 2) {
+        return;
+      }
+
+      // Фільтруємо функції з node_modules
+      if (location.includes("node_modules")) {
+        return;
+      }
+
+      if (!usedFunctions.has(funcName)) {
+        unused.push({ name: funcName, location: location });
+      }
+    });
+
+    console.log("⚡ Unused", unused.length, "functions");
+    return { total: allFunctions.size, unused: unused };
+  },
+
+  analyzeVariables: function (jsFiles) {
+    const allVariables = new Map();
+    const usedVariables = new Set();
+
+    jsFiles.forEach(function (file) {
+      const content = file.content;
+      const lines = content.split("\n");
+
+      lines.forEach(function (line, lineIndex) {
+        // 1. Прості змінні: const test1 = []
+        if (
+          !line.includes("useState") &&
+          !line.includes("function") &&
+          !line.includes("=>")
+        ) {
+          const simpleMatches = line.matchAll(
+            /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g
+          );
+          for (const match of simpleMatches) {
+            if (!line.includes("[") || line.includes("= [")) {
+              allVariables.set(match[1], {
+                location: file.name + ":" + (lineIndex + 1),
+                type: "змінна",
+              });
+            }
+          }
+        }
+
+        // 3. export const
+        const exportMatches = line.matchAll(
+          /export\s+const\s+([A-Z_][A-Z0-9_]*)\s*=/g
+        );
+        for (const match of exportMatches) {
+          allVariables.set(match[1], {
+            location: file.name + ":" + (lineIndex + 1),
+            type: "export const",
+          });
+        }
+      });
+
+      // 2. useState - шукаємо в усьому файлі (може бути багаторядковим)
+      const stateRegex =
+        /const\s*\[\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\]\s*=\s*useState/gs;
+      const stateMatches = [...content.matchAll(stateRegex)];
+
+      stateMatches.forEach(function (match) {
+        // Знаходимо номер рядка де це оголошення
+        const beforeMatch = content.substring(0, match.index);
+        const lineNum = beforeMatch.split("\n").length;
+
+        allVariables.set(match[1], {
+          location: file.name + ":" + lineNum,
+          type: "useState",
+        });
+        allVariables.set(match[2], {
+          location: file.name + ":" + lineNum,
+          type: "setState",
+        });
+      });
+    });
+
+    console.log("📦 Found", allVariables.size, "variables");
+
+    jsFiles.forEach(function (file) {
+      const content = file.content;
+
+      allVariables.forEach(function (_info, varName) {
+        // Перевіряємо використання в усьому файлі, а не по рядках
+        const lines = content.split("\n");
+
+        lines.forEach(function (line) {
+          // Пропускаємо рядок де змінна оголошена
+          const isDeclaration =
+            line.includes("const " + varName) ||
+            line.includes("let " + varName) ||
+            line.includes("var " + varName) ||
+            line.includes("const [" + varName);
+
+          // Якщо це не оголошення і змінна згадується - вона використовується
+          if (
+            !isDeclaration &&
+            new RegExp("\\b" + varName + "\\b").test(line)
+          ) {
+            usedVariables.add(varName);
+          }
+        });
+      });
+    });
+
+    console.log("📦 Used", usedVariables.size, "variables");
+
+    const unused = [];
+    allVariables.forEach(function (varInfo, varName) {
+      if (!usedVariables.has(varName)) {
+        unused.push({
+          name: varName,
+          location: varInfo.location,
+          type: varInfo.type,
+        });
+      }
+    });
+
+    console.log("📦 Unused", unused.length, "variables");
+    return { total: allVariables.size, unused: unused };
+  },
+
+  analyzeImages: function (imageFiles, jsFiles, cssFiles, htmlFiles = []) {
+    const allImages = [];
+    const usedImages = new Set();
+
+    // Збираємо всі зображення з різними варіантами шляхів
+    imageFiles.forEach(function (file) {
+      const fileName = file.name.split("/").pop();
+      const relativePath = file.name;
+
+      allImages.push({
+        name: fileName,
+        path: relativePath,
+        // Додаткові варіанти для пошуку
+        searchVariants: window.Utils.generateSearchVariants(
+          fileName,
+          relativePath
+        ),
+      });
+    });
+
+    console.log("🖼️ Found", allImages.length, "images");
+
+    // Об'єднуємо контент з усіх файлів
+    const allFiles = [...jsFiles, ...cssFiles, ...htmlFiles];
+    const allContent = allFiles.map((f) => f.content || "").join(" ");
+
+    // Покращений пошук використання зображень
+    allImages.forEach(function (img) {
+      // Перевіряємо всі можливі варіанти посилання на зображення
+      const isUsed = img.searchVariants.some((variant) => {
+        // Перевірка з урахуванням можливих кавичок, дужок тощо
+        const patterns = [
+          variant, // exact match
+          `"${variant}"`, // в подвійних лапках
+          `'${variant}'`, // в одинарних лапках
+          `\`${variant}\``, // в бектіках
+          `(${variant})`, // в дужках (CSS url)
+          `/${variant}`, // з слешем
+          variant.replace(/\\/g, "/"), // заміна бекслешів
+        ];
+
+        return patterns.some((pattern) => allContent.includes(pattern));
+      });
+
+      if (isUsed) {
+        usedImages.add(img.name);
+      }
+    });
+
+    console.log("🖼️ Used", usedImages.size, "images");
+
+    const unused = allImages.filter((img) => !usedImages.has(img.name));
+    console.log("🖼️ Unused", unused.length, "images");
+
+    return {
+      total: allImages.length,
+      unused: unused,
+      used: usedImages.size,
+      unusedDetails: unused.map((img) => ({ name: img.name, path: img.path })),
+    };
+  },
+
+  findDuplicateFunctions: function (jsFiles) {
+    const functionData = {};
+
+    jsFiles.forEach(function (file) {
+      const content = file.content;
+      const lines = content.split("\n");
+
+      // Знаходимо функції з їх тілом
+      lines.forEach(function (line, index) {
+        // Пропускаємо змінні з new (const cookies = new Cookies())
+        if (line.match(/(?:const|let|var)\s+\w+\s*=\s*new\s+/)) {
+          return;
+        }
+
+        // Пропускаємо виклики методів (cookies.get())
+        if (line.match(/(?:const|let|var)\s+\w+\s*=\s*\w+\.\w+\(/)) {
+          return;
+        }
+
+        // Знаходимо оголошення функцій
+        const funcMatch = line.match(
+          /(?:function\s+|export\s+function\s+)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/
+        );
+        const arrowMatch = line.match(
+          /(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s+)?\([^)]*\)\s*=>/
+        );
+
+        const funcName = funcMatch
+          ? funcMatch[1]
+          : arrowMatch
+          ? arrowMatch[1]
+          : null;
+
+        if (funcName) {
+          // Витягуємо тіло функції (наступні 5 рядків для порівняння)
+          const bodyLines = lines.slice(index + 1, index + 6).join("\n");
+          const normalizedBody = bodyLines
+            .replace(/\s+/g, " ")
+            .replace(/\/\/.*/g, "")
+            .trim()
+            .substring(0, 100);
+
+          if (!functionData[funcName]) {
+            functionData[funcName] = [];
+          }
+
+          functionData[funcName].push({
+            file: file.name,
+            body: normalizedBody,
+          });
+        }
+      });
+    });
+
+    const duplicates = [];
+
+    Object.keys(functionData).forEach(function (funcName) {
+      const occurrences = functionData[funcName];
+
+      if (occurrences.length > 1) {
+        const uniqueFiles = {};
+
+        occurrences.forEach(function (occ) {
+          if (!uniqueFiles[occ.file]) {
+            uniqueFiles[occ.file] = occ.body;
+          }
+        });
+
+        const fileNames = Object.keys(uniqueFiles);
+
+        if (fileNames.length > 1) {
+          // Перевіряємо чи тіла функцій схожі
+          const bodies = Object.values(uniqueFiles);
+          const firstBody = bodies[0];
+          let allSimilar = true;
+
+          for (let i = 1; i < bodies.length; i++) {
+            const similarity = window.Utils.calculateSimilarity(
+              firstBody,
+              bodies[i]
+            );
+            if (similarity < 0.7) {
+              allSimilar = false;
+              break;
+            }
+          }
+
+          duplicates.push({
+            name: funcName,
+            count: fileNames.length,
+            locations: fileNames,
+            similar: allSimilar,
+          });
+        }
+      }
+    });
+
+    console.log("🔄 Found", duplicates.length, "duplicate function names");
+    return duplicates;
+  },
+
+  analyzeFileTypes: function (files) {
+    const fileTypes = {};
+
+    files.forEach(function (file) {
+      if (file.name.includes("node_modules/")) return;
+      if (file.name.includes(".git/")) return;
+
+      const ext = file.name.split(".").pop();
+      if (ext && ext.length < 10) {
+        fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+      }
+    });
+
+    return fileTypes;
+  },
+
+  analyzeTypeScriptTypes: function (files) {
+    const typeDefinitions = [];
+    const typeDependencies = {};
+
+    // Simple regex-based type parser that works in browser
+    files.forEach((file) => {
+      if (!file.name.match(/\.(ts|tsx|js|jsx|mjs|cjs)$/i)) return;
+
+      const content = file.content;
+      const lines = content.split("\n");
+      let currentIndex = 0;
+
+      // Match both exported and non-exported interfaces and types
+      const typePatterns = [
+        // Interface pattern
+        /(?:export\s+)?(?:declare\s+)?interface\s+([a-zA-Z_$][\w$]*)\s*(?:<[^>]*>)?\s*{([\s\S]*?)^\s*}(?=\n|$)/gm,
+        // Type pattern
+        /(?:export\s+)?(?:declare\s+)?type\s+([a-zA-Z_$][\w$]*)\s*(?:<[^>]*>)?\s*=\s*([^;{]+?(?:\s*{[^}]*})?);/gms,
+      ];
+
+      typePatterns.forEach((pattern) => {
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+          const [fullMatch, typeName, typeBody] = match;
+          const isInterface = fullMatch.includes("interface");
+          const lineNumber =
+            (content.substring(0, match.index).match(/\n/g) || []).length + 1;
+
+          // Extract dependencies
+          const dependencies = new Set();
+          const typeRefs =
+            fullMatch.match(
+              /[{\s]([A-Z][a-zA-Z0-9_$]*)(?:<[^>]*>)?(?:\[\])?[,\s;:})]/g
+            ) || [];
+
+          typeRefs.forEach((ref) => {
+            const depName = ref.replace(/[^a-zA-Z0-9_$]/g, "");
+            if (
+              depName &&
+              depName !== typeName &&
+              ![
+                "string",
+                "number",
+                "boolean",
+                "any",
+                "void",
+                "null",
+                "undefined",
+                "never",
+                "unknown",
+              ].includes(depName)
+            ) {
+              dependencies.add(depName);
+            }
+          });
+
+          typeDefinitions.push({
+            name: typeName,
+            file: file.name,
+            line: lineNumber,
+            type: isInterface ? "interface" : "type",
+            content: fullMatch.trim(),
+            dependencies: Array.from(dependencies).map((name) => ({
+              name,
+              file: file.name,
+            })),
+          });
+        }
+      });
+    });
+
+    // Group by file for better organization
+    const byFile = {};
+    typeDefinitions.forEach((typeDef) => {
+      if (!byFile[typeDef.file]) {
+        byFile[typeDef.file] = [];
+      }
+      byFile[typeDef.file].push(typeDef);
+    });
+
+    return {
+      allTypes: typeDefinitions,
+      byFile,
+      stats: {
+        totalTypes: typeDefinitions.length,
+        totalInterfaces: typeDefinitions.filter((t) => t.type === "interface")
+          .length,
+        totalTypeAliases: typeDefinitions.filter((t) => t.type === "type")
+          .length,
+        filesWithTypes: Object.keys(byFile).length,
+      },
+    };
+  },
+
+  analyzePages: function (files) {
+    const pages = [];
+
+    files.forEach(function (file) {
+      if (file.name.includes("node_modules/")) return;
+      if (file.name.includes(".git/")) return;
+      if (file.name.includes("/.")) return; // Пропускаємо приховані файли
+
+      // Next.js App Router: app/**/page.tsx
+      if (file.name.match(/\/app\/.*\/page\.(jsx?|tsx?)$/i)) {
+        pages.push({
+          path: file.name,
+          type: "Next.js App Router",
+        });
+      }
+      // Next.js Pages Router: pages/**/*.tsx (але не _app, _document, _error)
+      else if (
+        file.name.match(/\/pages\/.*\.(jsx?|tsx?)$/i) &&
+        !file.name.match(/\/((_app|_document|_error|api)\.(jsx?|tsx?)|api\/)/i)
+      ) {
+        pages.push({
+          path: file.name,
+          type: "Next.js Pages Router",
+        });
+      }
+      // React Router: src/pages/**/*.tsx або src/views/**/*.tsx
+      else if (
+        file.name.match(
+          /\/src\/(pages|views|screens|routes)\/.*\.(jsx?|tsx?)$/i
+        )
+      ) {
+        pages.push({
+          path: file.name,
+          type: "React Page",
+        });
+      }
+      // React: компоненти які виглядають як сторінки (Home, About, Dashboard, тощо)
+      else if (
+        file.name.match(
+          /\/(Home|About|Dashboard|Profile|Login|Register|Contact|Settings|Admin|User|Product|Cart|Checkout|Detail|List|Index|Main)(Page)?\.(jsx?|tsx?)$/i
+        )
+      ) {
+        pages.push({
+          path: file.name,
+          type: "React Component",
+        });
+      }
+      // Vue/Nuxt: pages/**/*.vue
+      else if (file.name.match(/\/pages\/.*\.vue$/i)) {
+        pages.push({
+          path: file.name,
+          type: "Vue/Nuxt",
+        });
+      }
+      // Vue: views/**/*.vue
+      else if (file.name.match(/\/views\/.*\.vue$/i)) {
+        pages.push({
+          path: file.name,
+          type: "Vue View",
+        });
+      }
+      // Angular: *.component.ts
+      else if (file.name.match(/\.component\.(ts|js)$/i)) {
+        pages.push({
+          path: file.name,
+          type: "Angular Component",
+        });
+      }
+    });
+
+    return pages;
+  },
+};
