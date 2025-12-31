@@ -692,72 +692,144 @@ window.Analyzers = {
   analyzePages: function (files) {
     const pages = [];
 
-    files.forEach(function (file) {
-      if (file.name.includes("node_modules/")) return;
-      if (file.name.includes(".git/")) return;
-      if (file.name.includes("/.")) return; // Пропускаємо приховані файли
+    // 🔧 нормалізація шляхів
+    const allFiles = files.map((f) => ({
+      ...f,
+      path: "/" + f.name.replace(/\\/g, "/"),
+    }));
 
-      // Next.js App Router: app/**/page.tsx
-      if (file.name.match(/\/app\/.*\/page\.(jsx?|tsx?)$/i)) {
-        pages.push({
-          path: file.name,
-          type: "Next.js App Router",
-        });
-      }
-      // Next.js Pages Router: pages/**/*.tsx (але не _app, _document, _error)
-      else if (
-        file.name.match(/\/pages\/.*\.(jsx?|tsx?)$/i) &&
-        !file.name.match(/\/((_app|_document|_error|api)\.(jsx?|tsx?)|api\/)/i)
-      ) {
-        pages.push({
-          path: file.name,
-          type: "Next.js Pages Router",
-        });
-      }
-      // React Router: src/pages/**/*.tsx або src/views/**/*.tsx
-      else if (
-        file.name.match(
-          /\/src\/(pages|views|screens|routes)\/.*\.(jsx?|tsx?)$/i
-        )
-      ) {
-        pages.push({
-          path: file.name,
-          type: "React Page",
-        });
-      }
-      // React: компоненти які виглядають як сторінки (Home, About, Dashboard, тощо)
-      else if (
-        file.name.match(
-          /\/(Home|About|Dashboard|Profile|Login|Register|Contact|Settings|Admin|User|Product|Cart|Checkout|Detail|List|Index|Main)(Page)?\.(jsx?|tsx?)$/i
-        )
-      ) {
-        pages.push({
-          path: file.name,
-          type: "React Component",
-        });
-      }
-      // Vue/Nuxt: pages/**/*.vue
-      else if (file.name.match(/\/pages\/.*\.vue$/i)) {
-        pages.push({
-          path: file.name,
-          type: "Vue/Nuxt",
-        });
-      }
-      // Vue: views/**/*.vue
-      else if (file.name.match(/\/views\/.*\.vue$/i)) {
-        pages.push({
-          path: file.name,
-          type: "Vue View",
-        });
-      }
-      // Angular: *.component.ts
-      else if (file.name.match(/\.component\.(ts|js)$/i)) {
-        pages.push({
-          path: file.name,
-          type: "Angular Component",
-        });
-      }
-    });
+    // ❌ директорії які НІКОЛИ не сторінки
+    const EXCLUDED_DIRS = [
+      "/node_modules/",
+      "/.git/",
+      "/dist/",
+      "/build/",
+      "/public/",
+      "/assets/",
+      "/static/",
+      "/styles/",
+      "/css/",
+      "/scss/",
+      "/icons/",
+      "/images/",
+      "/img/",
+      "/components/",
+      "/ui/",
+      "/common/",
+      "/shared/",
+      "/hooks/",
+      "/utils/",
+      "/helpers/",
+      "/services/",
+      "/types/",
+      "/models/",
+      "/interfaces/",
+    ];
+
+    function isExcluded(path) {
+      return EXCLUDED_DIRS.some((dir) => path.includes(dir));
+    }
+
+    // 🔍 визначення типу проекту
+    const hasNextApp = allFiles.some(
+      (f) => f.path.includes("/app/") && f.path.includes("page.")
+    );
+    const hasNextPages = allFiles.some(
+      (f) => f.path.includes("/pages/") && f.path.match(/\.(jsx?|tsx?)$/)
+    );
+    const hasVue = allFiles.some((f) => f.path.endsWith(".vue"));
+    const hasAngular = allFiles.some((f) => f.path.endsWith(".component.ts"));
+    const hasReact = allFiles.some(
+      (f) => f.path.endsWith(".jsx") || f.path.endsWith(".tsx")
+    );
+
+    // 🧭 1. Next.js App Router
+    if (hasNextApp) {
+      allFiles.forEach((file) => {
+        if (isExcluded(file.path)) return;
+        if (file.path.match(/\/app\/.*\/page\.(jsx?|tsx?)$/i)) {
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "App Router",
+          });
+        }
+      });
+      return pages;
+    }
+
+    // 🧭 2. Next.js Pages Router
+    if (hasNextPages && !hasNextApp) {
+      allFiles.forEach((file) => {
+        if (isExcluded(file.path)) return;
+        if (
+          file.path.match(/\/pages\/.*\.(jsx?|tsx?)$/i) &&
+          !file.path.match(/\/(_app|_document|_error)\.(jsx?|tsx?)$/i) &&
+          !file.path.includes("/pages/api/")
+        ) {
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "Pages Router",
+          });
+        }
+      });
+      return pages;
+    }
+
+    // 🧭 3. Nuxt / Vue
+    if (hasVue) {
+      allFiles.forEach((file) => {
+        if (isExcluded(file.path)) return;
+
+        if (
+          file.path.match(/\/pages\/.*\.vue$/i) ||
+          file.path.match(/\/views\/.*\.vue$/i)
+        ) {
+          pages.push({
+            path: file.path,
+            framework: "Vue / Nuxt",
+          });
+        }
+      });
+      return pages;
+    }
+
+    // 🧭 4. Angular
+    if (hasAngular) {
+      allFiles.forEach((file) => {
+        if (isExcluded(file.path)) return;
+
+        if (file.path.match(/\.component\.ts$/i)) {
+          pages.push({
+            path: file.path,
+            framework: "Angular",
+            note: "Component-based routing",
+          });
+        }
+      });
+      return pages;
+    }
+
+    // 🧭 5. React SPA (react-router)
+    if (hasReact) {
+      allFiles.forEach((file) => {
+        if (isExcluded(file.path)) return;
+
+        if (
+          file.path.match(
+            /\/src\/(pages|views|screens|routes)\/.*\.(jsx?|tsx?)$/i
+          )
+        ) {
+          pages.push({
+            path: file.path,
+            framework: "React",
+            router: "SPA",
+          });
+        }
+      });
+      return pages;
+    }
 
     return pages;
   },
