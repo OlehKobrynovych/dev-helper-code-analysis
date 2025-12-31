@@ -289,6 +289,14 @@ window.ZipHandler = {
             const apiEndpointsAnalysis =
               window.Analyzers.analyzeUnusedAPIEndpoints(jsFiles);
 
+            // Analyze project dependencies
+            const dependencyAnalysis =
+              window.Analyzers.analyzeDependencies(jsFiles);
+            console.log(
+              "📊 Dependency analysis completed:",
+              dependencyAnalysis
+            );
+
             resolve({
               architecture: architectureInfo,
               unusedCSS: cssAnalysis.unused,
@@ -301,6 +309,7 @@ window.ZipHandler = {
               unusedEnumsInterfaces: enumsInterfacesAnalysis.unused,
               unusedAPIEndpoints: apiEndpointsAnalysis.unused,
               duplicateFunctions: duplicateFunctions,
+              dependencyAnalysis: dependencyAnalysis,
               apiRoutes: apiRoutes,
               fileTypes: fileTypesInfo,
               pages: pagesInfo,
@@ -317,6 +326,9 @@ window.ZipHandler = {
                 totalHooks: hooksAnalysis.total,
                 totalEnumsInterfaces: enumsInterfacesAnalysis.total,
                 totalAPIEndpoints: apiEndpointsAnalysis.total,
+                totalCyclicDependencies:
+                  dependencyAnalysis.cyclicDependencies.length,
+                totalGodFiles: dependencyAnalysis.godFiles.length,
                 totalFiles: files.length,
               },
               projectName,

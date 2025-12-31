@@ -1,3 +1,19 @@
+// Utility function to get correct word form based on count
+function getWordForm(n, textForms) {
+  n = Math.abs(n) % 100;
+  const n1 = n % 10;
+  if (n > 10 && n < 20) {
+    return textForms[2];
+  }
+  if (n1 > 1 && n1 < 5) {
+    return textForms[1];
+  }
+  if (n1 === 1) {
+    return textForms[0];
+  }
+  return textForms[2];
+}
+
 // Main popup controller
 const zipInput = document.getElementById("zipInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -958,6 +974,151 @@ function renderDetailedBlocks(result) {
       `
           : ""
       }
+      </div>
+    </div>
+    `;
+  }
+
+  // Display Dependency Analysis Section
+  if (result.dependencyAnalysis) {
+    const {
+      cyclicDependencies = [],
+      godFiles = [],
+      mostUsedComponents = [],
+    } = result.dependencyAnalysis;
+
+    html += `
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#3b82f6;">
+        🔄 Аналіз залежностей
+      </h3>
+      <div style="max-height: 500px; overflow-y: auto;">
+        <!-- Cyclic Dependencies -->
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
+            🔄 Циклічні залежності (${cyclicDependencies.length})
+          </h4>
+          ${
+            cyclicDependencies.length > 0
+              ? `
+                <div style="background:#eff6ff;border-radius:6px;padding:12px;border:1px solid #dbeafe;">
+                  ${cyclicDependencies
+                    .map(
+                      (cycle, index) => `
+                      <div style="margin-bottom: ${
+                        index < cyclicDependencies.length - 1 ? "12px" : "0"
+                      };">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                          <span style="font-size:11px;color:#3b82f6;">Цикл #${
+                            index + 1
+                          }</span>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11px;color:#1e40af;">
+                          ${cycle
+                            .map(
+                              (file, i, arr) =>
+                                `<span>${file.split("/").pop()}${
+                                  i < arr.length - 1 ? " → " : ""
+                                }</span>`
+                            )
+                            .join("")}
+                        </div>
+                      </div>
+                    `
+                    )
+                    .join("")}
+                </div>
+              `
+              : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Циклічних залежностей не знайдено</div>'
+          }
+        </div>
+        
+        <!-- God Files -->
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
+            🏛️ Потенційні "God Files"
+          </h4>
+          ${
+            godFiles.length > 0
+              ? `
+                <div style="background:#f0f9ff;border-radius:6px;border:1px solid #e0f2fe;overflow:hidden;max-height:300px;overflow-y:auto;">
+                  <div style="display:grid;grid-template-columns:1fr 100px;font-size:11px;background:#e0f2fe;padding:6px 10px;font-weight:600;color:#0369a1;position:sticky;top:0;z-index:1;">
+                    <div>Файл</div>
+                    <div style="text-align:right;">Імпортів</div>
+                  </div>
+                  ${godFiles
+                    .map(
+                      (file) => `
+                      <div style="display:grid;grid-template-columns:1fr 100px;padding:6px 10px;border-bottom:1px solid #e0f2fe;font-size:11px;">
+                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                          file.file
+                        }">
+                          ${file.file.split("/").pop()}
+                        </div>
+                        <div style="text-align:right;color:#0c4a6e;font-weight:500;">
+                          ${file.imports} імпортів
+                        </div>
+                      </div>
+                    `
+                    )
+                    .join("")}
+                </div>
+              `
+              : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Потенційних "God Files" не знайдено</div>'
+          }
+        </div>
+        
+        <!-- Most Used Components -->
+        <div>
+          <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
+            🏆 Найчастіше використовувані компоненти
+          </h4>
+          ${
+            mostUsedComponents.length > 0
+              ? `
+                <div style="background:#f5f3ff;border-radius:6px;border:1px solid #ede9fe;overflow:hidden;max-height:300px;overflow-y:auto;">
+                  <div style="display:grid;grid-template-columns:1fr 100px;font-size:11px;background:#ede9fe;padding:6px 10px;font-weight:600;color:#5b21b6;position:sticky;top:0;z-index:1;">
+                    <div>Компонент</div>
+                    <div style="text-align:right;">Використань</div>
+                  </div>
+                  ${mostUsedComponents
+                    .map(
+                      (comp) => `
+                      <div style="display:grid;grid-template-columns:1fr 100px;padding:6px 10px;border-bottom:1px solid #ede9fe;font-size:11px;">
+                        <div>
+                          <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" 
+                               title="Компонент: ${comp.name}\nРозташування: ${
+                        comp.file || "невідомо"
+                      }\n\nПовний шлях: ${comp.file || "не вказано"}">
+                            ${comp.name}
+                          </div>
+                          ${
+                            comp.file
+                              ? `
+                            <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" 
+                                 title="${comp.file}">
+                              ${comp.file}
+                            </div>
+                          `
+                              : '<div style="font-size:9px;color:#ef4444;">Попередження: розташування компонента не вказано</div>'
+                          }
+                        </div>
+                        <div style="text-align:right;color:#5b21b6;font-weight:500;display:flex;flex-direction:column;justify-content:center;">
+                          <div>${comp.count} разів</div>
+                          <div style="font-size:9px;color:#6b7280;">${getWordForm(
+                            comp.count,
+                            ["використання", "використання", "використань"]
+                          )}</div>
+                        </div>
+                      </div>
+                    `
+                    )
+                    .join("")}
+                </div>
+              `
+              : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не вдалося визначити часто використовувані компоненти</div>'
+          }
+        </div>
       </div>
     </div>
     `;
