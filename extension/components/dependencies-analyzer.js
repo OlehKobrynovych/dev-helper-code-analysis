@@ -3,15 +3,19 @@ window.DependenciesAnalyzer = {
   analyzeDependencies: function (jsFiles) {
     // Об'єкт для зберігання графа залежностей
     const dependencyGraph = {};
-    // Лічильник імпортів для кожного файлу
-    const importCounts = {};
-    // Лічильник використань компонентів
+    // Лічильник вихідних імпортів (скільки файлів імпортує ЦЕЙ файл) - для god files
+    const outboundImports = {};
+    // Лічильник вхідних імпортів (скільки файлів імпортують ЦЕЙ файл) - для hub files
+    const inboundImports = {};
+    // Лічильник використань компонентів (загальна кількість)
     const componentUsage = {};
+    // Лічильник файлів де використовується компонент
+    const componentFileCount = {};
     // Масив для зберігання шляхів до файлів компонентів
     const componentFiles = {};
-    // Регулярний вираз для пошуку імпортів
+    // Покращений регулярний вираз для пошуку імпортів (підтримує namespace, type imports, dynamic imports)
     const importRegex =
-      /(?:import|export)\s+(?:{[^}]+}\s+from\s+)?['"`]([^'"`]+)['"`]|(?:require\s*\(\s*['"`]([^'"`]+)['"`])/g;
+      /(?:import|export)(?:\s+type)?\s+(?:(?:{[^}]*}|[\w*]+(?:\s+as\s+\w+)?|\*\s+as\s+\w+)\s+from\s+)?['"`]([^'"`]+)['"`]|(?:require|import)\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
     // Регулярний вираз для пошуку використань компонентів
     const componentUsageRegex = /<([A-Z][a-zA-Z0-9]*)(?:\s|>|\/|$)/g;
 
@@ -24,7 +28,8 @@ window.DependenciesAnalyzer = {
         isVisited: false,
         isInPath: false,
       };
-      importCounts[fileName] = 0;
+      outboundImports[fileName] = 0;
+      inboundImports[fileName] = 0;
     });
 
     // Побудова графа залежностей
@@ -38,25 +43,27 @@ window.DependenciesAnalyzer = {
         const importPath = match[1] || match[2];
         if (!importPath) continue;
 
-        // Пропускаємо зовнішні залежності
-        if (importPath.startsWith(".") || importPath.startsWith("/")) {
-          // Знаходимо повний шлях до імпортованого файлу
-          const importedFile = this.resolveImportPath(
-            importPath,
-            fileName,
-            jsFiles
-          );
-          if (importedFile) {
-            // Додаємо залежність у граф
-            if (!dependencyGraph[fileName].imports.includes(importedFile)) {
-              dependencyGraph[fileName].imports.push(importedFile);
-              importCounts[importedFile] =
-                (importCounts[importedFile] || 0) + 1;
+        // Обробляємо як відносні шляхи, так і аліаси
+        const importedFile = this.resolveImportPath(
+          importPath,
+          fileName,
+          jsFiles
+        );
 
-              // Додаємо зворотне посилання
-              if (dependencyGraph[importedFile]) {
-                dependencyGraph[importedFile].importedBy.push(fileName);
-              }
+        if (importedFile) {
+          // Додаємо залежність у граф
+          if (!dependencyGraph[fileName].imports.includes(importedFile)) {
+            dependencyGraph[fileName].imports.push(importedFile);
+
+            // Збільшуємо вихідний лічильник для файлу що імпортує
+            outboundImports[fileName]++;
+
+            // Збільшуємо вхідний лічильник для імпортованого файлу
+            inboundImports[importedFile] = (inboundImports[importedFile] || 0) + 1;
+
+            // Додаємо зворотне посилання
+            if (dependencyGraph[importedFile]) {
+              dependencyGraph[importedFile].importedBy.push(fileName);
             }
           }
         }
@@ -69,41 +76,26 @@ window.DependenciesAnalyzer = {
       // Скидаємо lastIndex для глобального регулярного виразу
       componentUsageRegex.lastIndex = 0;
 
-      // Спочатку збираємо всі збіги, щоб уникнути дублювання
+      // Збираємо всі збіги
       while ((componentMatch = componentUsageRegex.exec(content)) !== null) {
         const componentName = componentMatch[1];
         componentMatches.push(componentName);
-      }
 
-      // Рахуємо унікальні використання компонентів у файлі
-      const uniqueComponentsInFile = new Set(componentMatches);
-
-      // Оновлюємо загальний лічильник
-      uniqueComponentsInFile.forEach((componentName) => {
-        // Оновлюємо лічильник використань
-        componentUsage[componentName] =
-          (componentUsage[componentName] || 0) + 1;
+        // Рахуємо КОЖНЕ використання компонента
+        componentUsage[componentName] = (componentUsage[componentName] || 0) + 1;
 
         // Зберігаємо шлях до файлу, де знаходиться компонент
         if (!componentFiles[componentName]) {
           componentFiles[componentName] = new Set();
         }
-        // Зберігаємо лише шлях до файлу як рядок
         componentFiles[componentName].add(file.name);
-      });
-
-      // Додатковий дебаг для компонента Button
-      if (uniqueComponentsInFile.has("Button")) {
-        console.log(
-          `Found Button component in ${file.name}, total matches: ${
-            componentMatches.filter((name) => name === "Button").length
-          }, unique: ${
-            Array.from(uniqueComponentsInFile).filter(
-              (name) => name === "Button"
-            ).length
-          }`
-        );
       }
+
+      // Рахуємо унікальні компоненти в цьому файлі для fileCount
+      const uniqueComponentsInFile = new Set(componentMatches);
+      uniqueComponentsInFile.forEach((componentName) => {
+        componentFileCount[componentName] = (componentFileCount[componentName] || 0) + 1;
+      });
     });
 
     // Пошук циклічних залежностей
@@ -145,9 +137,9 @@ window.DependenciesAnalyzer = {
       }
     });
 
-    // Знаходимо потенційні "god files" (файли з найбільшою кількістю імпортів)
-    const godFiles = Object.entries(importCounts)
-      .filter(([file, count]) => count > 5) // Файли з більш ніж 5 імпортами
+    // Знаходимо "god files" (файли які імпортують багато інших файлів)
+    const godFiles = Object.entries(outboundImports)
+      .filter(([file, count]) => count > 5) // Файли які імпортують більше 5 інших файлів
       .sort((a, b) => b[1] - a[1])
       .map(([file, count]) => ({
         file: file.split("/").pop(),
@@ -155,31 +147,30 @@ window.DependenciesAnalyzer = {
         imports: count,
       }));
 
-    // Додатковий дебаг для компонента Button
-    console.log("Button component usage:", componentUsage["Button"] || 0);
-    console.log(
-      "Button component files:",
-      componentFiles["Button"] ? Array.from(componentFiles["Button"]) : "none"
-    );
+    // Знаходимо "hub files" (файли які часто імпортуються іншими)
+    const hubFiles = Object.entries(inboundImports)
+      .filter(([file, count]) => count > 5) // Файли які імпортуються більше 5 разів
+      .sort((a, b) => b[1] - a[1])
+      .map(([file, count]) => ({
+        file: file.split("/").pop(),
+        fullPath: file,
+        importedBy: count,
+      }));
 
     // Знаходимо найбільш використовувані компоненти
     const mostUsedComponents = Object.entries(componentUsage)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20) // Топ-20 найбільш використовуваних компонентів
-      .map(([name, count]) => {
+      .map(([name, totalCount]) => {
         // Беремо перший зі знайдених шляхів до компонента (або null, якщо не знайдено)
         const filePath = componentFiles[name]
           ? Array.from(componentFiles[name])[0]
           : null;
 
-        // Додатковий дебаг для компонента Button
-        if (name === "Button") {
-          console.log(`Button component: count=${count}, file=${filePath}`);
-        }
-
         return {
           name,
-          count,
+          totalCount,                                // Загальна кількість використань
+          fileCount: componentFileCount[name] || 0,  // Кількість файлів де використовується
           file: filePath,
         };
       });
@@ -190,22 +181,70 @@ window.DependenciesAnalyzer = {
     });
 
     console.log("🔍 Found cycles:", formattedCycles.length);
-    console.log("🏛️ Potential god files:", godFiles.length);
+    console.log("🏛️ God files (high outbound imports):", godFiles.length);
+    console.log("🌟 Hub files (high inbound imports):", hubFiles.length);
     console.log("🏆 Most used components:", mostUsedComponents.length);
 
     return {
       cyclicDependencies: formattedCycles,
       godFiles: godFiles.slice(0, 20), // Обмежуємо кількість для відображення
-      mostUsedComponents: mostUsedComponents.slice(0, 20), // Обмежуємо кількість для відображення
+      hubFiles: hubFiles.slice(0, 20), // Обмежуємо кількість для відображення
+      mostUsedComponents: mostUsedComponents, // Вже обмежено до 20
     };
   },
 
   // Допоміжна функція для розв'язання шляху імпорту
   resolveImportPath: function (importPath, importer, files) {
-    // Спрощений приклад - у реальному застосунку потрібно реалізувати повну логіку розв'язання шляхів
+    let resolvedPath = importPath;
+
+    // 1. ОБРОБКА PATH ALIASES
+    const aliases = {
+      '@/': '',           // @/lib/utils → lib/utils
+      '~/': '',           // ~/components → components
+      '@components/': 'components/',
+      '@lib/': 'lib/',
+      '@utils/': 'utils/',
+      '@src/': 'src/',
+      '@/src/': 'src/',
+    };
+
+    // Перевіряємо чи використовується аліас
+    for (const [alias, replacement] of Object.entries(aliases)) {
+      if (importPath.startsWith(alias)) {
+        resolvedPath = importPath.replace(alias, replacement);
+        break;
+      }
+    }
+
+    // 2. ПОШУК З КОРЕНЯ ПРОЕКТУ для аліасів
+    if (importPath !== resolvedPath) {
+      const possibleAliasedPaths = [
+        resolvedPath,
+        `${resolvedPath}.js`,
+        `${resolvedPath}.jsx`,
+        `${resolvedPath}.ts`,
+        `${resolvedPath}.tsx`,
+        `${resolvedPath}/index.js`,
+        `${resolvedPath}/index.jsx`,
+        `${resolvedPath}/index.ts`,
+        `${resolvedPath}/index.tsx`,
+      ];
+
+      for (const path of possibleAliasedPaths) {
+        const found = files.find(f => f.name === path || f.name.endsWith('/' + path));
+        if (found) return found.name;
+      }
+    }
+
+    // 3. ОБРОБКА ВІДНОСНИХ ШЛЯХІВ (існуюча логіка)
+    // Пропускаємо зовнішні залежності (node_modules)
+    if (!importPath.startsWith(".") && !importPath.startsWith("/") && importPath === resolvedPath) {
+      return null; // Зовнішня залежність
+    }
+
     const dirname = importer.substring(0, importer.lastIndexOf("/") + 1);
 
-    // Спрощений варіант - шукаємо точний збіг
+    // Шукаємо точний збіг для відносних шляхів
     const possiblePaths = [
       importPath,
       `${importPath}.js`,

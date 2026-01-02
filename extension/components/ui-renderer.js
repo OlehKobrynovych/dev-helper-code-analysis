@@ -813,6 +813,7 @@ window.UIRenderer = {
     const {
       cyclicDependencies = [],
       godFiles = [],
+      hubFiles = [],
       mostUsedComponents = [],
     } = result.dependencyAnalysis;
 
@@ -821,7 +822,7 @@ window.UIRenderer = {
         <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#3b82f6;">
           🔄 Аналіз залежностей
         </h3>
-        <div style="max-height: 500px; overflow-y: auto;">
+        <div>
           <!-- Cyclic Dependencies -->
           <div style="margin-bottom: 20px;">
             <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
@@ -846,26 +847,67 @@ window.UIRenderer = {
           <!-- God Files -->
           <div style="margin-bottom: 20px;">
             <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
-              🏛️ Потенційні "God Files"
+              🏛️ "God Files" - файли з багатьма імпортами
             </h4>
+            <p style="font-size:10px;color:#6b7280;margin:0 0 8px 0;">
+              Файли, які імпортують багато інших файлів (високі вихідні залежності)
+            </p>
             ${godFiles.length > 0 ? `
               <div style="background:#f0f9ff;border-radius:6px;border:1px solid #e0f2fe;overflow:hidden;max-height:300px;overflow-y:auto;">
-                <div style="display:grid;grid-template-columns:1fr 100px;font-size:11px;background:#e0f2fe;padding:6px 10px;font-weight:600;color:#0369a1;position:sticky;top:0;z-index:1;">
+                <div style="display:grid;grid-template-columns:1fr 120px;font-size:11px;background:#e0f2fe;padding:6px 10px;font-weight:600;color:#0369a1;position:sticky;top:0;z-index:1;">
                   <div>Файл</div>
-                  <div style="text-align:right;">Імпортів</div>
+                  <div style="text-align:right;">Імпортує</div>
                 </div>
                 ${godFiles.map(file => `
-                  <div style="display:grid;grid-template-columns:1fr 100px;padding:6px 10px;border-bottom:1px solid #e0f2fe;font-size:11px;">
-                    <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.file}">
-                      ${file.file.split("/").pop()}
+                  <div style="display:grid;grid-template-columns:1fr 120px;padding:6px 10px;border-bottom:1px solid #e0f2fe;font-size:11px;">
+                    <div>
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                        ${file.file}
+                      </div>
+                      <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                        ${file.fullPath}
+                      </div>
                     </div>
                     <div style="text-align:right;color:#0c4a6e;font-weight:500;">
-                      ${file.imports} імпортів
+                      ${file.imports} ${this.getWordForm(file.imports, ['файл', 'файли', 'файлів'])}
                     </div>
                   </div>
                 `).join("")}
               </div>
-            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Потенційних "God Files" не знайдено</div>'}
+            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'}
+          </div>
+
+          <!-- Hub Files -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
+              🌟 "Hub Files" - популярні файли
+            </h4>
+            <p style="font-size:10px;color:#6b7280;margin:0 0 8px 0;">
+              Файли, які імпортуються багатьма іншими (високі вхідні залежності)
+            </p>
+            ${hubFiles.length > 0 ? `
+              <div style="background:#fef3ff;border-radius:6px;border:1px solid #fae8ff;overflow:hidden;max-height:300px;overflow-y:auto;">
+                <div style="display:grid;grid-template-columns:1fr 140px;font-size:11px;background:#fae8ff;padding:6px 10px;font-weight:600;color:#86198f;position:sticky;top:0;z-index:1;">
+                  <div>Файл</div>
+                  <div style="text-align:right;">Імпортується</div>
+                </div>
+                ${hubFiles.map(file => `
+                  <div style="display:grid;grid-template-columns:1fr 140px;padding:6px 10px;border-bottom:1px solid #fae8ff;font-size:11px;">
+                    <div>
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                        ${file.file}
+                      </div>
+                      <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                        ${file.fullPath}
+                      </div>
+                    </div>
+                    <div style="text-align:right;color:#86198f;font-weight:500;">
+                      ${file.importedBy} ${this.getWordForm(file.importedBy, ['файлом', 'файлами', 'файлами'])}
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'}
           </div>
 
           <!-- Most Used Components -->
@@ -875,33 +917,30 @@ window.UIRenderer = {
             </h4>
             ${mostUsedComponents.length > 0 ? `
               <div style="background:#f5f3ff;border-radius:6px;border:1px solid #ede9fe;overflow:hidden;max-height:300px;overflow-y:auto;">
-                <div style="display:grid;grid-template-columns:1fr 100px;font-size:11px;background:#ede9fe;padding:6px 10px;font-weight:600;color:#5b21b6;position:sticky;top:0;z-index:1;">
+                <div style="display:grid;grid-template-columns:1fr 120px;font-size:11px;background:#ede9fe;padding:6px 10px;font-weight:600;color:#5b21b6;position:sticky;top:0;z-index:1;">
                   <div>Компонент</div>
                   <div style="text-align:right;">Використань</div>
                 </div>
                 ${mostUsedComponents.map(comp => `
-                  <div style="display:grid;grid-template-columns:1fr 100px;padding:6px 10px;border-bottom:1px solid #ede9fe;font-size:11px;">
+                  <div style="display:grid;grid-template-columns:1fr 120px;padding:6px 10px;border-bottom:1px solid #ede9fe;font-size:11px;">
                     <div>
-                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="Компонент: ${comp.name}
-Розташування: ${comp.file || "невідомо"}
-
-Повний шлях: ${comp.file || "не вказано"}">
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${comp.name}">
                         ${comp.name}
                       </div>
                       ${comp.file ? `
                         <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${comp.file}">
                           ${comp.file}
                         </div>
-                      ` : '<div style="font-size:9px;color:#ef4444;">Попередження: розташування компонента не вказано</div>'}
+                      ` : ''}
                     </div>
-                    <div style="text-align:right;color:#5b21b6;font-weight:500;display:flex;flex-direction:column;justify-content:center;">
-                      <div>${comp.count} разів</div>
-                      <div style="font-size:9px;color:#6b7280;">${this.getWordForm(comp.count, ["використання", "використання", "використань"])}</div>
+                    <div style="text-align:right;color:#5b21b6;font-weight:500;">
+                      ${comp.totalCount || comp.count} разів
+                      ${comp.fileCount ? `<div style="font-size:9px;color:#6b7280;">у ${comp.fileCount} ${this.getWordForm(comp.fileCount, ['файлі', 'файлах', 'файлах'])}</div>` : ''}
                     </div>
                   </div>
                 `).join("")}
               </div>
-            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не вдалося визначити часто використовувані компоненти</div>'}
+            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'}
           </div>
         </div>
       </div>
