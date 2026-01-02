@@ -162,7 +162,7 @@ window.UIRenderer.renderMyBlock = function (data) {
 
 2. Call from `ui-renderer.js` in `renderDetailedBlocks()`:
 
-```javascript
+````javascript
 renderDetailedBlocks: function(result) {
   return this.renderMyBlock(result.myData) + /* other blocks */;
 }
@@ -182,7 +182,7 @@ When adding new analyzers, follow this pattern from existing code:
 const filteredFiles = files.filter(
   (f) => !f.name.includes("node_modules/") && !f.name.includes(".next/")
 );
-```
+````
 
 ### Supported File Types
 
@@ -220,14 +220,52 @@ const filteredFiles = files.filter(
 ## AI Assistant Guidelines
 
 ### Code Quality
+
 - **No hallucinations**: If uncertain, explicitly state "I don't know" rather than guessing
 - **Simplicity first**: This is a small project - prefer simple solutions over complex architectures
 - **Avoid over-engineering**: No enterprise patterns, unnecessary abstractions, or premature optimization
 
 ### Documentation
+
 - Update CLAUDE.md only when making significant architectural changes
 - Keep documentation changes minimal and focused
 
 ### Token Management
+
 - Provide warning when approaching token limits
 - Prefer concise solutions to minimize token usage
+
+### Communication Style
+
+- Be concise - avoid verbose explanations unless explicitly requested
+- Show code first, explain only when necessary
+- Skip confirmations like "Sure, I'll help you..." - just do the task
+- Avoid repeating what the user already said
+
+### File Operations
+
+- Read files only when necessary for the current task
+- Avoid re-reading files you've already seen in the conversation
+- Use targeted line ranges (offset/limit) for large files
+- Trust existing code - don't read files just to verify they exist
+
+### Tool Usage
+
+- Combine related changes in single Edit call when possible
+- Use parallel tool calls for independent operations
+- Avoid redundant tool calls (e.g., reading same file twice)
+
+### Response Format
+
+- Use Ukrainian language as requested
+- Minimal commentary during task execution
+- Report results briefly - user can see the changes in git diff
+- Skip phrases like "Ось що я зробив:", "Як бачите:" - just state facts
+
+### Communication Style
+
+- Be concise - avoid verbose explanations unless explicitly requested
+- Show code first, explain only when necessary
+- Skip confirmations and pleasantries - execute tasks directly
+- Avoid repeating information the user already provided
+- Use Ukrainian language
