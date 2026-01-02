@@ -263,35 +263,38 @@ window.ZipHandler = {
               cssFiles,
               jsFiles
             );
-            const functionAnalysis = window.Analyzers.analyzeFunctions(jsFiles);
-            const variableAnalysis = window.Analyzers.analyzeVariables(jsFiles);
-            const imageAnalysis = window.Analyzers.analyzeImages(
+            const functionAnalysis =
+              window.FunctionsAnalyzer.analyzeFunctions(jsFiles);
+            const variableAnalysis =
+              window.VariablesAnalyzer.analyzeVariables(jsFiles);
+            const imageAnalysis = window.ImagesAnalyzer.analyzeImages(
               imageFiles,
               jsFiles,
               cssFiles
             );
             const duplicateFunctions =
-              window.Analyzers.findDuplicateFunctions(jsFiles);
+              window.DuplicatesAnalyzer.findDuplicateFunctions(jsFiles);
             const apiRoutes = window.APIAnalyzer.analyzeAPIRoutes(jsFiles);
             const fileTypesInfo = window.Analyzers.analyzeFileTypes(files);
-            const pagesInfo = window.Analyzers.analyzePages(files);
+            const pagesInfo = window.PagesAnalyzer.analyzePages(files);
             const typesAnalysis =
-              window.Analyzers.analyzeTypeScriptTypes(files);
+              window.TypeScriptAnalyzer.analyzeTypeScriptTypes(files);
 
             // Нові аналізатори
             const exportsAnalysis =
-              window.Analyzers.analyzeUnusedExports(jsFiles);
+              window.UnusedExportsAnalyzer.analyzeUnusedExports(jsFiles);
             const componentsAnalysis =
-              window.Analyzers.analyzeUnusedComponents(jsFiles);
-            const hooksAnalysis = window.Analyzers.analyzeUnusedHooks(jsFiles);
+              window.UnusedComponentsAnalyzer.analyzeUnusedComponents(jsFiles);
+            const hooksAnalysis =
+              window.UnusedHooksAnalyzer.analyzeUnusedHooks(jsFiles);
             const enumsInterfacesAnalysis =
-              window.Analyzers.analyzeUnusedEnumsInterfaces(jsFiles);
+              window.UnusedTypesAnalyzer.analyzeUnusedEnumsInterfaces(jsFiles);
             const apiEndpointsAnalysis =
-              window.Analyzers.analyzeUnusedAPIEndpoints(jsFiles);
+              window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints(jsFiles);
 
             // Analyze project dependencies
             const dependencyAnalysis =
-              window.Analyzers.analyzeDependencies(jsFiles);
+              window.DependenciesAnalyzer.analyzeDependencies(jsFiles);
             console.log(
               "📊 Dependency analysis completed:",
               dependencyAnalysis
