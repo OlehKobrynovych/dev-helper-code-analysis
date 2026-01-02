@@ -259,7 +259,7 @@ window.ZipHandler = {
               nestingLevel: maxNesting,
             };
 
-            const cssAnalysis = window.Analyzers.analyzeCSSClasses(
+            const cssAnalysis = window.CSSAnalyzer.analyzeCSSClasses(
               cssFiles,
               jsFiles
             );
