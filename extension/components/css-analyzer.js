@@ -151,4 +151,224 @@ window.CSSAnalyzer = {
     );
     return { total: allClasses.size, unused: unused };
   },
+
+  analyzeProjectStyles: function (cssFiles) {
+    const cssVariables = new Map();
+    const fonts = new Map();
+    const colors = new Map();
+
+    const colorProperties = [
+      "color",
+      "background-color",
+      "border-color",
+      "border",
+      "background",
+      "fill",
+      "stroke",
+      "box-shadow",
+      "text-shadow",
+    ];
+    const colorRegex = /(#[0-9a-fA-F]{3,8}\b|rgba?\([^)]+\)|hsla?\([^)]+\))/g;
+    const variableRegex = /(--[\w-]+)\s*:\s*(.+?);/g;
+    const fontFaceRegex = /@font-face\s*{[^}]+}/g;
+    const fontFamilyPropertyRegex =
+      /font-family\s*:\s*([^;]+?)(?:\s*!important)?\s*;/g; // Refined regex
+    const propertyRegex = /([\w-]+)\s*:\s*([^;]+);/g;
+
+    const libraryFilePatterns = [
+      "bootstrap",
+      "material",
+      "font-awesome",
+      "tailwind",
+      "normalize",
+      "reset",
+      "reboot",
+      "min.css",
+      "bundle.css",
+      "vendor",
+    ];
+    const genericFontFamilies = [
+      "serif",
+      "sans-serif",
+      "monospace",
+      "cursive",
+      "fantasy",
+      "system-ui",
+      "initial",
+      "inherit",
+      "unset",
+      "revert",
+      "ui-sans-serif",
+      "ui-monospace",
+      "ui-rounded",
+      "ui-serif",
+      "emoji",
+      "math",
+      "fangsong",
+      "system",
+      "-apple-system",
+      "BlinkMacSystemFont",
+      "Segoe UI",
+      "Roboto",
+      "Oxygen",
+      "Ubuntu",
+      "Cantarell",
+      "Fira Sans",
+      "Droid Sans",
+      "Helvetica Neue",
+      "Arial",
+      "Tahoma",
+      "Verdana",
+      "Times New Roman",
+      "Georgia",
+      "Courier New",
+      "Lucida Console",
+      "monospace",
+      "sans",
+      "sans-serif",
+      "serif",
+      "cursive",
+      "fantasy",
+      "monospace",
+      "system-ui",
+      "inherit",
+      "initial",
+      "unset",
+      "revert",
+      "ui-sans-serif",
+      "ui-monospace",
+      "ui-rounded",
+      "ui-serif",
+      "emoji",
+      "math",
+      "fangsong",
+      "system",
+    ];
+
+    // Helper function to clean font names
+    const cleanFontName = (name) => {
+      // Remove quotes, extra spaces, and trim
+      return name.replace(/^['"]|['"]$/g, "").trim();
+    };
+
+    // Helper function to check if a font is a system or generic font
+    const isSystemOrGenericFont = (fontName) => {
+      if (!fontName) return true;
+      const cleanName = cleanFontName(fontName).toLowerCase();
+      return (
+        genericFontFamilies.includes(cleanName) ||
+        cleanName.startsWith("var(") ||
+        cleanName.startsWith("--") ||
+        cleanName.includes("!important") ||
+        cleanName === ""
+      );
+    };
+
+    // Extract custom fonts from CSS content
+    const extractFontsFromContent = (content) => {
+        const fonts = new Set();
+
+        // 1. Extract from @font-face declarations
+        const fontFaceRegex = /@font-face\s*{([^}]+)}/gi;
+        let fontFaceMatch;
+        while ((fontFaceMatch = fontFaceRegex.exec(content)) !== null) {
+            const fontFaceBlock = fontFaceMatch[1];
+            const familyMatch = fontFaceBlock.match(/font-family\s*:\s*['"]([^'"]+)['"]/i);
+            if (familyMatch) {
+                const fontName = familyMatch[1].trim();
+                if (fontName && !isSystemOrGenericFont(fontName)) {
+                    fonts.add(fontName);
+                }
+            }
+        }
+
+        // 2. Extract from font-family properties (only first font in stack)
+        const fontFamilyRegex = /font-family\s*:\s*([^;}]+)/gi;
+        let fontFamilyMatch;
+        while ((fontFamilyMatch = fontFamilyRegex.exec(content)) !== null) {
+            const fontValue = fontFamilyMatch[1];
+
+            // Split by comma and take only first font (primary font)
+            const primaryFont = fontValue.split(',')[0]
+                .trim()
+                .replace(/^['"]|['"]$/g, '')
+                .replace(/\s*!important$/, '')
+                .trim();
+
+            if (primaryFont && !isSystemOrGenericFont(primaryFont)) {
+                fonts.add(primaryFont);
+            }
+        }
+
+        return Array.from(fonts);
+    };
+
+    const isLibraryFile = (fileName) =>
+      libraryFilePatterns.some((pattern) => fileName.includes(pattern));
+
+    // Process all CSS files to extract fonts
+    const allFonts = new Set();
+    cssFiles.forEach(file => {
+        const extractedFonts = extractFontsFromContent(file.content);
+        extractedFonts.forEach(font => allFonts.add(font));
+    });
+
+    cssFiles.forEach((file) => {
+      const content = file.content;
+      const fromLibrary = isLibraryFile(file.name);
+
+      // Extract CSS Variables (only from non-library files)
+      if (!fromLibrary) {
+        let varMatch;
+        while ((varMatch = variableRegex.exec(content)) !== null) {
+          const name = varMatch[1].trim();
+          const value = varMatch[2].trim();
+          if (!cssVariables.has(name)) {
+            cssVariables.set(name, { value, files: new Set() });
+          }
+          cssVariables.get(name).files.add(file.name);
+        }
+      }
+
+      // Extract Colors from specific properties
+      let propMatch;
+      while ((propMatch = propertyRegex.exec(content)) !== null) {
+        const prop = propMatch[1].trim();
+        const value = propMatch[2];
+
+        if (colorProperties.includes(prop)) {
+          let colorMatch;
+          // Reset regex lastIndex for consistent matching from the start of the 'value' string
+          colorRegex.lastIndex = 0;
+          while ((colorMatch = colorRegex.exec(value)) !== null) {
+            const color = colorMatch[0].toLowerCase();
+            if (
+              color !== "transparent" &&
+              color !== "inherit" &&
+              color !== "initial" &&
+              color !== "currentcolor"
+            ) {
+              colors.set(color, (colors.get(color) || 0) + 1);
+            }
+          }
+        }
+      }
+    });
+
+    // Sort colors by frequency
+    const sortedColors = Array.from(colors.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map((entry) => ({ color: entry[0], count: entry[1] }));
+
+    return {
+      variables: Array.from(cssVariables.entries()).map(([name, data]) => ({
+        name,
+        value: data.value,
+        files: Array.from(data.files),
+      })),
+      fonts: Array.from(allFonts).sort((a, b) => a.localeCompare(b)),
+      colors: sortedColors,
+    };
+  },
 };

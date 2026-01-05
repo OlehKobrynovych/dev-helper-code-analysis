@@ -170,6 +170,7 @@ window.UIRenderer = {
   // Головна функція-оркестратор для детальних блоків
   renderDetailedBlocks: function (result) {
     return (
+      this.renderProjectStyles(result) +
       this.renderFileTypes(result) +
       this.renderDependencies(result) +
       this.renderCodeHealth(result) +
@@ -199,6 +200,78 @@ window.UIRenderer = {
     if (n1 > 1 && n1 < 5) return textForms[1];
     if (n1 === 1) return textForms[0];
     return textForms[2];
+  },
+
+  renderProjectStyles: function (result) {
+    const projectStyles = result.projectStyles || {};
+    const { variables = [], fonts = [], colors = [] } = projectStyles;
+
+    if (variables.length === 0 && fonts.length === 0 && colors.length === 0) return "";
+
+    let html = `
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+        <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#374151;">🎨 Стилі проекту</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:16px;">
+    `;
+
+    // CSS Variables
+    if (variables.length > 0) {
+      html += `
+        <div>
+          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#1e40af;">CSS Змінні (${variables.length})</h4>
+          <div style="max-height:200px;overflow-y:auto;background:#f9fafb;border-radius:6px;padding:8px;font-size:11px;">
+            ${variables.map(v => `
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid #e5e7eb;">
+                <code style="color:#1e40af;flex-shrink:0;">${v.name}</code>
+                <code style="color:#555;word-break:break-all;text-align:right;">${v.value}</code>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Fonts
+    if (fonts.length > 0) {
+      html += `
+        <div>
+          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#059669;">Шрифти (${fonts.length})</h4>
+          <div style="max-height:200px;overflow-y:auto;background:#f9fafb;border-radius:6px;padding:8px;font-size:11px;">
+            ${fonts.map(f => `
+              <div style="padding:4px 0;border-bottom:1px solid #e5e7eb;">
+                <code style="color:#059669;">${f}</code>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Colors
+    if (colors.length > 0) {
+      html += `
+        <div>
+          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#9333ea;">Основні кольори</h4>
+          <div style="max-height:200px;overflow-y:auto;background:#f9fafb;border-radius:6px;padding:8px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${colors.map(c => `
+                <div style="display:flex;align-items:center;gap:6px;" title="Used ${c.count} times">
+                  <div style="width:16px;height:16px;border-radius:4px;background-color:${c.color};border:1px solid #ddd;"></div>
+                  <code style="font-size:11px;color:#555;">${c.color}</code>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
   },
 
   // Common libraries database (moved from popup-main.js)

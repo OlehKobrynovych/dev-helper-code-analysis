@@ -263,6 +263,7 @@ window.ZipHandler = {
               cssFiles,
               jsFiles
             );
+            const projectStyles = window.CSSAnalyzer.analyzeProjectStyles(cssFiles);
             const functionAnalysis =
               window.FunctionsAnalyzer.analyzeFunctions(jsFiles);
             const variableAnalysis =
@@ -317,6 +318,7 @@ window.ZipHandler = {
               fileTypes: fileTypesInfo,
               pages: pagesInfo,
               typesAnalysis: typesAnalysis,
+              projectStyles: projectStyles,
               stats: {
                 cssFilesAnalyzed: cssFiles.length,
                 jsFilesAnalyzed: jsFiles.length,
