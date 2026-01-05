@@ -22,11 +22,24 @@ Files must load in this exact order (defined in `extension/popup.html`):
 
 1. `lib/jszip.min.js` - ZIP file handling library
 2. `components/utils.js` - Base utilities (`window.Utils`)
-3. `components/analyzers.js` - Code analyzers (`window.Analyzers`)
-4. `components/api-analyzer.js` - API route analyzer (`window.APIAnalyzer`)
-5. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
-6. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
-7. `popup-main.js` - Main controller with event handlers
+3. `components/analyzers.js` - File types analyzer (`window.Analyzers`)
+4. `components/css-analyzer.js` - CSS analyzer (`window.CSSAnalyzer`)
+5. `components/functions-analyzer.js` - Functions analyzer (`window.FunctionsAnalyzer`)
+6. `components/variables-analyzer.js` - Variables analyzer (`window.VariablesAnalyzer`)
+7. `components/images-analyzer.js` - Images analyzer (`window.ImagesAnalyzer`)
+8. `components/duplicates-analyzer.js` - Duplicates analyzer (`window.DuplicatesAnalyzer`)
+9. `components/typescript-analyzer.js` - TypeScript analyzer (`window.TypeScriptAnalyzer`)
+10. `components/pages-analyzer.js` - Pages analyzer (`window.PagesAnalyzer`)
+11. `components/unused-exports-analyzer.js` - Unused exports analyzer (`window.UnusedExportsAnalyzer`)
+12. `components/unused-components-analyzer.js` - Unused components analyzer (`window.UnusedComponentsAnalyzer`)
+13. `components/unused-hooks-analyzer.js` - Unused hooks analyzer (`window.UnusedHooksAnalyzer`)
+14. `components/unused-types-analyzer.js` - Unused types analyzer (`window.UnusedTypesAnalyzer`)
+15. `components/unused-endpoints-analyzer.js` - Unused endpoints analyzer (`window.UnusedEndpointsAnalyzer`)
+16. `components/dependencies-analyzer.js` - Dependencies analyzer (`window.DependenciesAnalyzer`)
+17. `components/api-analyzer.js` - API route analyzer (`window.APIAnalyzer`)
+18. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
+19. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
+20. `popup-main.js` - Main controller with event handlers
 
 ### Key Components
 
@@ -36,18 +49,27 @@ Files must load in this exact order (defined in `extension/popup.html`):
 - `window.Utils.calculateSimilarity()` - String comparison
 - `window.Utils.generateSearchVariants()` - File search variants
 
-**`components/analyzers.js`** - Core analyzers (~1500 lines)
+**`components/analyzers.js`** - File types analyzer (~18 lines)
 
-- `window.Analyzers.analyzeCSSClasses()` - CSS class usage analysis
-- `window.Analyzers.analyzeFunctions()` - JavaScript function detection
-- `window.Analyzers.analyzeVariables()` - Variable usage
-- `window.Analyzers.analyzeImages()` - Image references
-- `window.Analyzers.findDuplicateFunctions()` - Duplicate code detection
 - `window.Analyzers.analyzeFileTypes()` - File type categorization
-- `window.Analyzers.analyzeTypeScriptTypes()` - TypeScript type analysis
-- `window.Analyzers.analyzePages()` - Page/route detection
 
-**`components/api-analyzer.js`** - API analysis
+**Specialized Analyzers** (each in separate file for modularity):
+
+- **`css-analyzer.js`** - `window.CSSAnalyzer.analyzeCSSClasses()` - CSS class usage analysis
+- **`functions-analyzer.js`** - `window.FunctionsAnalyzer.analyzeFunctions()` - JavaScript function detection
+- **`variables-analyzer.js`** - `window.VariablesAnalyzer.analyzeVariables()` - Variable usage
+- **`images-analyzer.js`** - `window.ImagesAnalyzer.analyzeImages()` - Image references
+- **`duplicates-analyzer.js`** - `window.DuplicatesAnalyzer.findDuplicateFunctions()` - Duplicate code detection
+- **`typescript-analyzer.js`** - `window.TypeScriptAnalyzer.analyzeTypeScriptTypes()` - TypeScript type analysis
+- **`pages-analyzer.js`** - `window.PagesAnalyzer.analyzePages()` - Page/route detection
+- **`unused-exports-analyzer.js`** - `window.UnusedExportsAnalyzer.analyzeUnusedExports()` - Unused exports
+- **`unused-components-analyzer.js`** - `window.UnusedComponentsAnalyzer.analyzeUnusedComponents()` - Unused React components
+- **`unused-hooks-analyzer.js`** - `window.UnusedHooksAnalyzer.analyzeUnusedHooks()` - Unused React hooks
+- **`unused-types-analyzer.js`** - `window.UnusedTypesAnalyzer.analyzeUnusedEnumsInterfaces()` - Unused TypeScript types/enums/interfaces
+- **`unused-endpoints-analyzer.js`** - `window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints()` - Unused API endpoints
+- **`dependencies-analyzer.js`** - `window.DependenciesAnalyzer.analyzeDependencies()` - Dependency graph analysis, cyclic dependencies, god files, hub files
+
+**`components/api-analyzer.js`** - API routes analysis
 
 - `window.APIAnalyzer.analyzeAPIRoutes()` - Finds API routes (Next.js, Express, fetch, axios)
 - `window.APIAnalyzer.extractNextJSPath()` - Next.js route extraction
@@ -75,15 +97,21 @@ Files must load in this exact order (defined in `extension/popup.html`):
 User uploads ZIP → popup-main.js reads as ArrayBuffer →
 window.ZipHandler.analyzeZipProject() →
   ├─ extractZipFiles()
-  ├─ window.Analyzers.analyzeCSSClasses()
-  ├─ window.Analyzers.analyzeFunctions()
-  ├─ window.Analyzers.analyzeVariables()
-  ├─ window.Analyzers.analyzeImages()
-  ├─ window.Analyzers.findDuplicateFunctions()
+  ├─ window.CSSAnalyzer.analyzeCSSClasses()
+  ├─ window.FunctionsAnalyzer.analyzeFunctions()
+  ├─ window.VariablesAnalyzer.analyzeVariables()
+  ├─ window.ImagesAnalyzer.analyzeImages()
+  ├─ window.DuplicatesAnalyzer.findDuplicateFunctions()
   ├─ window.APIAnalyzer.analyzeAPIRoutes()
   ├─ window.Analyzers.analyzeFileTypes()
-  ├─ window.Analyzers.analyzePages()
-  └─ window.Analyzers.analyzeTypeScriptTypes()
+  ├─ window.PagesAnalyzer.analyzePages()
+  ├─ window.TypeScriptAnalyzer.analyzeTypeScriptTypes()
+  ├─ window.UnusedExportsAnalyzer.analyzeUnusedExports()
+  ├─ window.UnusedComponentsAnalyzer.analyzeUnusedComponents()
+  ├─ window.UnusedHooksAnalyzer.analyzeUnusedHooks()
+  ├─ window.UnusedTypesAnalyzer.analyzeUnusedEnumsInterfaces()
+  ├─ window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints()
+  └─ window.DependenciesAnalyzer.analyzeDependencies()
 → Returns result object →
 window.UIRenderer.renderResultsHTML(result) →
 HTML inserted into DOM
@@ -126,22 +154,33 @@ This project runs directly in the browser without any build step. Do not add web
 
 ### Adding a New Analyzer
 
-1. Add function to `components/analyzers.js`:
+**Analyzers are now modular - each analyzer has its own file for better maintainability.**
+
+1. Create new file `components/my-analyzer.js`:
 
 ```javascript
-window.Analyzers.myNewAnalyzer = function (files) {
-  // Analysis logic
-  return { used: [], unused: [] };
+// My Analyzer
+window.MyAnalyzer = {
+  myNewAnalyzer: function (files) {
+    // Analysis logic
+    return { used: [], unused: [] };
+  },
 };
 ```
 
-2. Call it in `components/zip-handler.js` inside `analyzeZipProject()`:
+2. Add script tag to `extension/popup.html` (maintain loading order - add before `zip-handler.js`):
 
-```javascript
-const myResult = window.Analyzers.myNewAnalyzer(allFiles);
+```html
+<script src="components/my-analyzer.js"></script>
 ```
 
-3. Include in return object:
+3. Call it in `components/zip-handler.js` inside `analyzeZipProject()`:
+
+```javascript
+const myResult = window.MyAnalyzer.myNewAnalyzer(allFiles);
+```
+
+4. Include in return object:
 
 ```javascript
 resolve({
