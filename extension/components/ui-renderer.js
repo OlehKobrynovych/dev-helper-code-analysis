@@ -168,9 +168,289 @@ window.UIRenderer = {
   },
 
   // Головна функція-оркестратор для детальних блоків
+  // Render component tree visualization
+  renderComponentTree: function (result) {
+    if (
+      !result.componentTree ||
+      !result.componentTree.pages ||
+      result.componentTree.pages.length === 0
+    ) {
+      return "";
+    }
+
+    let html = `
+      <div class="analysis-block">
+        <div class="block-header">
+          <h3>🌳 Візуалізація компонентів</h3>
+          <p>Ієрархія компонентів у вашому додатку</p>
+        </div>
+        <div class="component-tree-container" id="componentTreeContainer">
+          <div class="component-tree-controls">
+            <button class="btn btn-sm" id="expandAllComponents">Розгорнути всі</button>
+            <button class="btn btn-sm" id="collapseAllComponents">Згорнути всі</button>
+          </div>
+          <div id="componentTree"></div>
+        </div>
+      </div>
+    `;
+
+    // Add event listeners after the DOM is updated
+    setTimeout(() => {
+      if (
+        window.ComponentTreeAnalyzer &&
+        window.ComponentTreeAnalyzer.renderComponentTree
+      ) {
+        window.ComponentTreeAnalyzer.renderComponentTree(
+          "componentTree",
+          result.componentTree.pages
+        );
+
+        // Add event listeners for expand/collapse buttons
+        const expandAllBtn = document.getElementById("expandAllComponents");
+        const collapseAllBtn = document.getElementById("collapseAllComponents");
+
+        if (expandAllBtn) {
+          expandAllBtn.addEventListener("click", () => {
+            document.querySelectorAll(".component-children").forEach((el) => {
+              el.style.display = "block";
+            });
+            document.querySelectorAll(".toggle-children").forEach((toggle) => {
+              toggle.textContent = "▼";
+            });
+          });
+        }
+
+        if (collapseAllBtn) {
+          collapseAllBtn.addEventListener("click", () => {
+            document.querySelectorAll(".component-children").forEach((el) => {
+              el.style.display = "none";
+            });
+            document.querySelectorAll(".toggle-children").forEach((toggle) => {
+              toggle.textContent = "▶";
+            });
+          });
+        }
+      }
+    }, 100);
+
+    return html;
+  },
+
+  // Головна функція-оркестратор для детальних блоків
   renderDetailedBlocks: function (result) {
     return (
       this.renderProjectStyles(result) +
+      this.renderComponentTree(result) + // Add component tree visualization
+      this.renderFileTypes(result) +
+      this.renderDependencies(result) +
+      this.renderCodeHealth(result) +
+      this.renderDependencyAnalysis(result) +
+      this.renderUnusedCSS(result) +
+      this.renderUnusedFunctions(result) +
+      this.renderUnusedVariables(result) +
+      this.renderUnusedImages(result) +
+      this.renderUnusedExports(result) +
+      this.renderUnusedComponents(result) +
+      this.renderUnusedHooks(result) +
+      this.renderUnusedEnumsInterfaces(result) +
+      this.renderUnusedAPIEndpoints(result) +
+      this.renderDuplicateFunctions(result) +
+      this.renderAPIRoutes(result) +
+      this.renderPages(result) +
+      this.renderTypeScriptTypes(result) +
+      this.renderRecommendations(result)
+    );
+  },
+
+  // Utility function for word forms
+  getWordForm: function (n, textForms) {
+    n = Math.abs(n) % 100;
+    const n1 = n % 10;
+    if (n > 10 && n < 20) return textForms[2];
+    if (n1 > 1 && n1 < 5) return textForms[1];
+    if (n1 === 1) return textForms[0];
+    return textForms[2];
+  },
+
+  // Рендер проектних стилів
+  renderProjectStyles: function (result) {
+    if (!result.projectStyles) {
+      return "";
+    }
+
+    const styles = result.projectStyles;
+    if (
+      !styles.tailwind &&
+      !styles.bootstrap &&
+      !styles.mui &&
+      !styles.styledComponents &&
+      !styles.cssModules
+    ) {
+      return "";
+    }
+
+    let html = `
+      <div class="analysis-block">
+        <div class="block-header">
+          <h3>🎨 Стилізація проекту</h3>
+          <p>Використовувані CSS фреймворки та бібліотеки</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+    `;
+
+    if (styles.tailwind) {
+      html += `
+        <div style="padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;">
+          <div style="font-weight: 500; color: #0369a1;">Tailwind CSS</div>
+          <div style="font-size: 12px; color: #0c4a6e; margin-top: 4px;">Utility-first CSS</div>
+        </div>
+      `;
+    }
+
+    if (styles.bootstrap) {
+      html += `
+        <div style="padding: 12px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px;">
+          <div style="font-weight: 500; color: #6d28d9;">Bootstrap</div>
+          <div style="font-size: 12px; color: #5b21b6; margin-top: 4px;">CSS Framework</div>
+        </div>
+      `;
+    }
+
+    if (styles.mui) {
+      html += `
+        <div style="padding: 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px;">
+          <div style="font-weight: 500; color: #1d4ed8;">Material-UI</div>
+          <div style="font-size: 12px; color: #1e40af; margin-top: 4px;">React UI Library</div>
+        </div>
+      `;
+    }
+
+    if (styles.styledComponents) {
+      html += `
+        <div style="padding: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px;">
+          <div style="font-weight: 500; color: #92400e;">Styled Components</div>
+          <div style="font-size: 12px; color: #78350f; margin-top: 4px;">CSS-in-JS</div>
+        </div>
+      `;
+    }
+
+    if (styles.cssModules) {
+      html += `
+        <div style="padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+          <div style="font-weight: 500; color: #15803d;">CSS Modules</div>
+          <div style="font-size: 12px; color: #166534; margin-top: 4px;">Scoped CSS</div>
+        </div>
+      `;
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // Render component tree visualization
+  renderComponentTree: function (result) {
+    if (!result.componentTree) {
+      return "";
+    }
+
+    const pages = result.componentTree.pages || [];
+    const allComponents = result.componentTree.allComponents || [];
+
+    if (pages.length === 0 && allComponents.length === 0) {
+      return `
+        <div class="analysis-block">
+          <div class="block-header">
+            <h3>🌳 Візуалізація компонентів</h3>
+            <p>Не знайдено React/JS компонентів у проекті</p>
+          </div>
+          <div style="padding: 16px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; color: #92400e;">
+            💡 Переконайтесь, що ваш проект містить .js, .jsx, .ts або .tsx файли
+          </div>
+        </div>
+      `;
+    }
+
+    if (pages.length === 0) {
+      return `
+        <div class="analysis-block">
+          <div class="block-header">
+            <h3>🌳 Візуалізація компонентів</h3>
+            <p>Всього компонентів: ${allComponents.length}</p>
+          </div>
+          <div style="padding: 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: #1e40af;">
+            💡 Не знайдено точок входу (pages/screens/routes). Показано ${allComponents.length} ${this.getWordForm(allComponents.length, ["компонент", "компоненти", "компонентів"])}.
+          </div>
+        </div>
+      `;
+    }
+
+    let html = `
+      <div class="analysis-block">
+        <div class="block-header">
+          <h3>📂 Структура проекту</h3>
+          <p>Файлове дерево вашого проекту (${pages.length} ${this.getWordForm(pages.length, ["папка", "папки", "папок"])}, всього файлів: ${allComponents.length})</p>
+        </div>
+        <div class="component-tree-container" id="componentTreeContainer">
+          <div class="component-tree-controls">
+            <button class="btn btn-sm" id="expandAllComponents">📖 Розгорнути всі</button>
+            <button class="btn btn-sm" id="collapseAllComponents">📕 Згорнути всі</button>
+          </div>
+          <div id="componentTree"></div>
+        </div>
+      </div>
+    `;
+
+    // Add event listeners after the DOM is updated
+    setTimeout(() => {
+      if (
+        window.ComponentTreeAnalyzer &&
+        window.ComponentTreeAnalyzer.renderComponentTree
+      ) {
+        window.ComponentTreeAnalyzer.renderComponentTree(
+          "componentTree",
+          result.componentTree.pages
+        );
+
+        // Add event listeners for expand/collapse buttons
+        const expandAllBtn = document.getElementById("expandAllComponents");
+        const collapseAllBtn = document.getElementById("collapseAllComponents");
+
+        if (expandAllBtn) {
+          expandAllBtn.addEventListener("click", () => {
+            document.querySelectorAll(".component-children").forEach((el) => {
+              el.style.display = "block";
+            });
+            document.querySelectorAll(".toggle-children").forEach((toggle) => {
+              toggle.textContent = "▼";
+            });
+          });
+        }
+
+        if (collapseAllBtn) {
+          collapseAllBtn.addEventListener("click", () => {
+            document.querySelectorAll(".component-children").forEach((el) => {
+              el.style.display = "none";
+            });
+            document.querySelectorAll(".toggle-children").forEach((toggle) => {
+              toggle.textContent = "▶";
+            });
+          });
+        }
+      }
+    }, 100);
+
+    return html;
+  },
+
+  // Головна функція-оркестратор для детальних блоків
+  renderDetailedBlocks: function (result) {
+    return (
+      this.renderProjectStyles(result) +
+      this.renderComponentTree(result) + // Add component tree visualization
       this.renderFileTypes(result) +
       this.renderDependencies(result) +
       this.renderCodeHealth(result) +
@@ -206,7 +486,8 @@ window.UIRenderer = {
     const projectStyles = result.projectStyles || {};
     const { variables = [], fonts = [], colors = [] } = projectStyles;
 
-    if (variables.length === 0 && fonts.length === 0 && colors.length === 0) return "";
+    if (variables.length === 0 && fonts.length === 0 && colors.length === 0)
+      return "";
 
     let html = `
       <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
@@ -218,14 +499,20 @@ window.UIRenderer = {
     if (variables.length > 0) {
       html += `
         <div>
-          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#1e40af;">CSS Змінні (${variables.length})</h4>
+          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#1e40af;">CSS Змінні (${
+            variables.length
+          })</h4>
           <div style="max-height:200px;overflow-y:auto;background:#f9fafb;border-radius:6px;padding:8px;font-size:11px;">
-            ${variables.map(v => `
+            ${variables
+              .map(
+                (v) => `
               <div style="display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid #e5e7eb;">
                 <code style="color:#1e40af;flex-shrink:0;">${v.name}</code>
                 <code style="color:#555;word-break:break-all;text-align:right;">${v.value}</code>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
         </div>
       `;
@@ -235,13 +522,19 @@ window.UIRenderer = {
     if (fonts.length > 0) {
       html += `
         <div>
-          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#059669;">Шрифти (${fonts.length})</h4>
+          <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#059669;">Шрифти (${
+            fonts.length
+          })</h4>
           <div style="max-height:200px;overflow-y:auto;background:#f9fafb;border-radius:6px;padding:8px;font-size:11px;">
-            ${fonts.map(f => `
+            ${fonts
+              .map(
+                (f) => `
               <div style="padding:4px 0;border-bottom:1px solid #e5e7eb;">
                 <code style="color:#059669;">${f}</code>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
         </div>
       `;
@@ -254,12 +547,16 @@ window.UIRenderer = {
           <h4 style="margin:0 0 8px 0;font-size:12px;font-weight:600;color:#9333ea;">Основні кольори</h4>
           <div style="max-height:200px;overflow-y:auto;background:#f9fafb;border-radius:6px;padding:8px;">
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              ${colors.map(c => `
+              ${colors
+                .map(
+                  (c) => `
                 <div style="display:flex;align-items:center;gap:6px;" title="Used ${c.count} times">
                   <div style="width:16px;height:16px;border-radius:4px;background-color:${c.color};border:1px solid #ddd;"></div>
                   <code style="font-size:11px;color:#555;">${c.color}</code>
                 </div>
-              `).join('')}
+              `
+                )
+                .join("")}
             </div>
           </div>
         </div>
@@ -377,10 +674,12 @@ window.UIRenderer = {
       xlsx: "Робота з Excel файлами",
       "pdf-lib": "Створення та редагування PDF",
       "@chakra-ui/react": "Простий, модульний та доступний компонентний набір",
-      "shadcn/ui": "Компоненти UI, створені з використанням Radix UI та Tailwind CSS",
+      "shadcn/ui":
+        "Компоненти UI, створені з використанням Radix UI та Tailwind CSS",
       daisyui: "Безкоштовна бібліотека компонентів для Tailwind CSS",
       headlessui: "Повністю нестилізовані, повністю доступні компоненти UI",
-      "radix-ui": "Низькорівневі, нестилізовані компоненти для створення дизайн-систем",
+      "radix-ui":
+        "Низькорівневі, нестилізовані компоненти для створення дизайн-систем",
       mantine: "Повноцінна бібліотека React-компонентів",
       xstate: "Бібліотека керування станом та автоматів станів",
       effector: "Ефективне керування станом",
@@ -422,7 +721,8 @@ window.UIRenderer = {
       "web3.js": "Бібліотека для взаємодії з блокчейном Ethereum",
       wagmi: "React Hooks для Ethereum",
       viem: "Типобезпечний інтерфейс для Ethereum",
-      "@clerk/clerk-react": "Сервіс аутентифікації та керування користувачами для React",
+      "@clerk/clerk-react":
+        "Сервіс аутентифікації та керування користувачами для React",
       "@react-oauth/google": "OAuth-авторизація через Google для React",
       "@emotion/react": "CSS-in-JS бібліотека для стилізації компонентів",
       "@emotion/styled": "Styled API для Emotion (CSS-in-JS)",
@@ -458,7 +758,8 @@ window.UIRenderer = {
       "@tanstack/router-plugin": "Vite/Build плагін для TanStack Router",
       "@vitejs/plugin-react-swc": "SWC-плагін для швидкої збірки React у Vite",
       "@tailwindcss/vite": "Офіційний Tailwind CSS плагін для Vite",
-      "@trivago/prettier-plugin-sort-imports": "Автоматичне сортування імпортів",
+      "@trivago/prettier-plugin-sort-imports":
+        "Автоматичне сортування імпортів",
       "prettier-plugin-tailwindcss": "Сортування Tailwind-класів",
       "@types/node": "TypeScript типи для Node.js",
       "@types/react": "TypeScript типи для React",
@@ -488,7 +789,8 @@ window.UIRenderer = {
       cookie: "Низькорівнева бібліотека для парсингу та серіалізації cookies",
       sass: "CSS препроцесор (SCSS/SASS)",
       postcss: "Інструмент для трансформації CSS за допомогою плагінів",
-      "@tailwindcss/line-clamp": "Tailwind плагін для обмеження кількості рядків тексту",
+      "@tailwindcss/line-clamp":
+        "Tailwind плагін для обмеження кількості рядків тексту",
       "react-icons": "Популярні іконки (FontAwesome, Material, etc.)",
       "@react-icons/all-files": "Оптимізовані іконки з tree-shaking",
       "hamburger-react": "Анімована hamburger-кнопка",
@@ -508,14 +810,26 @@ window.UIRenderer = {
 
     if (fileTypeEntries.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#374151;">📄 Типи файлів</h3>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#374151;">📄 Типи файлів</h3>';
     html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
 
     const fileTypeIcons = {
-      js: "🟨", jsx: "⚛️", ts: "🔷", tsx: "⚛️",
-      vue: "💚", css: "🎨", scss: "🎨", json: "📋",
-      md: "📝", html: "🌐", png: "🖼️", jpg: "🖼️", svg: "🎨",
+      js: "🟨",
+      jsx: "⚛️",
+      ts: "🔷",
+      tsx: "⚛️",
+      vue: "💚",
+      css: "🎨",
+      scss: "🎨",
+      json: "📋",
+      md: "📝",
+      html: "🌐",
+      png: "🖼️",
+      jpg: "🖼️",
+      svg: "🎨",
     };
 
     fileTypeEntries
@@ -523,12 +837,20 @@ window.UIRenderer = {
       .slice(0, 15)
       .forEach(([ext, count]) => {
         const icon = fileTypeIcons[ext] || "📄";
-        html += '<div style="background:#f3f4f6;padding:8px 12px;border-radius:6px;font-size:11px;">';
-        html += '<span>' + icon + ' .' + ext + '</span> <strong style="color:#3b82f6;">' + count + '</strong>';
-        html += '</div>';
+        html +=
+          '<div style="background:#f3f4f6;padding:8px 12px;border-radius:6px;font-size:11px;">';
+        html +=
+          "<span>" +
+          icon +
+          " ." +
+          ext +
+          '</span> <strong style="color:#3b82f6;">' +
+          count +
+          "</strong>";
+        html += "</div>";
       });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -578,13 +900,17 @@ window.UIRenderer = {
                 </tr>
               </thead>
               <tbody>
-                ${regularDeps.map(dep => `
+                ${regularDeps
+                  .map(
+                    (dep) => `
                   <tr style="border-bottom:1px solid #f3f4f6;">
                     <td style="padding:8px 12px;font-family:monospace;color:#111827;">${dep.name}</td>
                     <td style="padding:8px 12px;color:#4b5563;font-family:monospace;">${dep.version}</td>
                     <td style="padding:8px 12px;color:#4b5563;">${dep.description}</td>
                   </tr>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </tbody>
             </table>
           </div>
@@ -612,7 +938,9 @@ window.UIRenderer = {
                 </tr>
               </thead>
               <tbody>
-                ${devDeps.map(dep => `
+                ${devDeps
+                  .map(
+                    (dep) => `
                   <tr style="border-bottom:1px solid #f3f4f6;">
                     <td style="padding:8px 12px;font-family:monospace;color:#111827;">
                       ${dep.name}
@@ -621,7 +949,9 @@ window.UIRenderer = {
                     <td style="padding:8px 12px;color:#4b5563;font-family:monospace;">${dep.version}</td>
                     <td style="padding:8px 12px;color:#4b5563;">${dep.description}</td>
                   </tr>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </tbody>
             </table>
           </div>
@@ -651,10 +981,7 @@ window.UIRenderer = {
     const largeFiles = [];
 
     // File patterns to analyze (source files only)
-    const sourceFilePatterns = [
-      /\.(js|jsx|ts|tsx|vue|svelte)$/,
-      /^[^.]*$/,
-    ];
+    const sourceFilePatterns = [/\.(js|jsx|ts|tsx|vue|svelte)$/, /^[^.]*$/];
 
     // Patterns to ignore
     const ignoredPatterns = [
@@ -674,8 +1001,12 @@ window.UIRenderer = {
       const fileExt = fileName.split(".").pop().toLowerCase();
 
       // Skip non-source files and ignored patterns
-      const isSourceFile = sourceFilePatterns.some((pattern) => file.name.match(pattern));
-      const isIgnored = ignoredPatterns.some((pattern) => file.name.match(pattern));
+      const isSourceFile = sourceFilePatterns.some((pattern) =>
+        file.name.match(pattern)
+      );
+      const isIgnored = ignoredPatterns.some((pattern) =>
+        file.name.match(pattern)
+      );
 
       if (!isSourceFile || isIgnored) return;
 
@@ -705,7 +1036,11 @@ window.UIRenderer = {
 
       lines.forEach((line) => {
         const trimmedLine = line.trim();
-        if (!trimmedLine || trimmedLine.startsWith("//") || trimmedLine.startsWith("*")) {
+        if (
+          !trimmedLine ||
+          trimmedLine.startsWith("//") ||
+          trimmedLine.startsWith("*")
+        ) {
           return;
         }
 
@@ -715,12 +1050,18 @@ window.UIRenderer = {
         }
 
         // Count loops
-        if (trimmedLine.match(/\b(for|while|do|forEach|map|filter|reduce)\s*\(/)) {
+        if (
+          trimmedLine.match(/\b(for|while|do|forEach|map|filter|reduce)\s*\(/)
+        ) {
           loopCount++;
         }
 
         // Track function declarations
-        if (trimmedLine.match(/\b(function|const|let|var|class|interface|type|enum)\s+\w+\s*[=:(]/)) {
+        if (
+          trimmedLine.match(
+            /\b(function|const|let|var|class|interface|type|enum)\s+\w+\s*[=:(]/
+          )
+        ) {
           functionNesting = currentNesting + 1;
           maxFunctionNesting = Math.max(maxFunctionNesting, functionNesting);
         }
@@ -737,7 +1078,8 @@ window.UIRenderer = {
       });
 
       // Calculate complexity score
-      const complexity = ifElseCount * 2 + loopCount * 2 + maxFunctionNesting * 3;
+      const complexity =
+        ifElseCount * 2 + loopCount * 2 + maxFunctionNesting * 3;
 
       // Only show files with significant complexity or deep nesting
       const isComplex =
@@ -779,18 +1121,31 @@ window.UIRenderer = {
 
     if (largeFiles.length > 0) {
       html += `
-        <div style="margin-bottom:${codeHealthIssues.length > 0 ? "16px" : "0"};">
+        <div style="margin-bottom:${
+          codeHealthIssues.length > 0 ? "16px" : "0"
+        };">
           <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Великі файли (>500 рядків):</div>
           <div style="background:#f9fafb;border-radius:6px;padding:8px;font-size:12px;">
-            ${largeFiles.map(file => `
+            ${largeFiles
+              .map(
+                (file) => `
               <div style="padding:6px 8px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
-                <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.path}">
+                <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                  file.path
+                }">
                   ${file.name}
-                  <span style="color:#9ca3af;font-size:11px;margin-left:8px;">${file.path.replace(file.name, "")}</span>
+                  <span style="color:#9ca3af;font-size:11px;margin-left:8px;">${file.path.replace(
+                    file.name,
+                    ""
+                  )}</span>
                 </div>
-                <span style="color:#dc2626;font-weight:500;margin-left:12px;">${file.lines} рядків</span>
+                <span style="color:#dc2626;font-weight:500;margin-left:12px;">${
+                  file.lines
+                } рядків</span>
               </div>
-            `).join("")}
+            `
+              )
+              .join("")}
           </div>
         </div>
       `;
@@ -801,39 +1156,58 @@ window.UIRenderer = {
         <div>
           <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Потенційні проблеми складності:</div>
           <div style="background:#f9fafb;border-radius:6px;padding:8px;font-size:12px;">
-            ${codeHealthIssues.map(file => {
-              const issues = [];
-              if (file.complexity > 50) issues.push(`дуже висока складність (${file.complexity} балів)`);
-              else if (file.complexity > 30) issues.push(`висока складність (${file.complexity} балів)`);
+            ${codeHealthIssues
+              .map((file) => {
+                const issues = [];
+                if (file.complexity > 50)
+                  issues.push(
+                    `дуже висока складність (${file.complexity} балів)`
+                  );
+                else if (file.complexity > 30)
+                  issues.push(`висока складність (${file.complexity} балів)`);
 
-              if (file.functionNesting > 4) issues.push(`функції з глибоким вкладенням (до ${file.functionNesting} рівнів)`);
-              if (file.nestingLevel > 5) issues.push(`глибоке вкладення (${file.nestingLevel} рівнів)`);
-              if (file.ifElseCount > 10) issues.push(`багато умов (${file.ifElseCount})`);
-              if (file.loopCount > 5) issues.push(`багато циклів (${file.loopCount})`);
-              if (file.isLargeFile) issues.push(`великий файл (${file.lines} рядків)`);
+                if (file.functionNesting > 4)
+                  issues.push(
+                    `функції з глибоким вкладенням (до ${file.functionNesting} рівнів)`
+                  );
+                if (file.nestingLevel > 5)
+                  issues.push(
+                    `глибоке вкладення (${file.nestingLevel} рівнів)`
+                  );
+                if (file.ifElseCount > 10)
+                  issues.push(`багато умов (${file.ifElseCount})`);
+                if (file.loopCount > 5)
+                  issues.push(`багато циклів (${file.loopCount})`);
+                if (file.isLargeFile)
+                  issues.push(`великий файл (${file.lines} рядків)`);
 
-              // Calculate severity score
-              const severityScore = Math.min(100, Math.floor(
-                file.complexity * 0.4 +
-                file.functionNesting * 10 +
-                file.ifElseCount * 0.5 +
-                file.loopCount * 1 +
-                file.nestingLevel * 2
-              ));
+                // Calculate severity score
+                const severityScore = Math.min(
+                  100,
+                  Math.floor(
+                    file.complexity * 0.4 +
+                      file.functionNesting * 10 +
+                      file.ifElseCount * 0.5 +
+                      file.loopCount * 1 +
+                      file.nestingLevel * 2
+                  )
+                );
 
-              // Determine severity color
-              let severityColor = "#10b981";
-              if (severityScore > 70) severityColor = "#ef4444";
-              else if (severityScore > 50) severityColor = "#f59e0b";
-              else if (severityScore > 30) severityColor = "#3b82f6";
+                // Determine severity color
+                let severityColor = "#10b981";
+                if (severityScore > 70) severityColor = "#ef4444";
+                else if (severityScore > 50) severityColor = "#f59e0b";
+                else if (severityScore > 30) severityColor = "#3b82f6";
 
-              return `
+                return `
                 <div style="padding:10px;border-bottom:1px solid #e5e7eb;position:relative;">
                   <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${severityColor};border-radius:2px 0 0 2px;"></div>
                   <div style="margin-left:12px;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
                       <div style="font-weight:500;flex:1;min-width:0;">
-                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.path}">
+                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                          file.path
+                        }">
                           ${file.name}
                         </div>
                         <div style="font-size:11px;color:#6b7280;margin-top:2px;">
@@ -842,18 +1216,26 @@ window.UIRenderer = {
                       </div>
                       <div style="display:flex;align-items:center;gap:8px;margin-left:8px;">
                         <span style="font-size:11px;color:#6b7280;">
-                          <span style="color:#374151;font-weight:500;">${file.complexity}</span> балів
+                          <span style="color:#374151;font-weight:500;">${
+                            file.complexity
+                          }</span> балів
                         </span>
                       </div>
                     </div>
-                    ${issues.length > 0 ? `
+                    ${
+                      issues.length > 0
+                        ? `
                       <div style="font-size:11px;color:#4b5563;margin-top:4px;">
                         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;">
-                          ${issues.map(issue => `
+                          ${issues
+                            .map(
+                              (issue) => `
                             <span style="display:inline-flex;align-items:center;background:${severityColor}10;color:${severityColor};padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500;border:1px solid ${severityColor}20;">
                               ${issue}
                             </span>
-                          `).join("")}
+                          `
+                            )
+                            .join("")}
                         </div>
                         <div style="display:flex;align-items:center;gap:12px;font-size:10px;color:#6b7280;margin-top:4px;">
                           <span>${file.lines} рядків</span>
@@ -862,20 +1244,25 @@ window.UIRenderer = {
                           <span>•</span>
                           <span>${file.loopCount} циклів</span>
                           <span>•</span>
-                          <span>вкладеність до ${file.nestingLevel} рівнів</span>
+                          <span>вкладеність до ${
+                            file.nestingLevel
+                          } рівнів</span>
                         </div>
                       </div>
-                    ` : ""}
+                    `
+                        : ""
+                    }
                   </div>
                 </div>
               `;
-            }).join("")}
+              })
+              .join("")}
           </div>
         </div>
       `;
     }
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -901,20 +1288,39 @@ window.UIRenderer = {
             <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
               🔄 Циклічні залежності (${cyclicDependencies.length})
             </h4>
-            ${cyclicDependencies.length > 0 ? `
+            ${
+              cyclicDependencies.length > 0
+                ? `
               <div style="background:#eff6ff;border-radius:6px;padding:12px;border:1px solid #dbeafe;">
-                ${cyclicDependencies.map((cycle, index) => `
-                  <div style="margin-bottom: ${index < cyclicDependencies.length - 1 ? "12px" : "0"};">
+                ${cyclicDependencies
+                  .map(
+                    (cycle, index) => `
+                  <div style="margin-bottom: ${
+                    index < cyclicDependencies.length - 1 ? "12px" : "0"
+                  };">
                     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                      <span style="font-size:11px;color:#3b82f6;">Цикл #${index + 1}</span>
+                      <span style="font-size:11px;color:#3b82f6;">Цикл #${
+                        index + 1
+                      }</span>
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11px;color:#1e40af;">
-                      ${cycle.map((file, i, arr) => `<span>${file.split("/").pop()}${i < arr.length - 1 ? " → " : ""}</span>`).join("")}
+                      ${cycle
+                        .map(
+                          (file, i, arr) =>
+                            `<span>${file.split("/").pop()}${
+                              i < arr.length - 1 ? " → " : ""
+                            }</span>`
+                        )
+                        .join("")}
                     </div>
                   </div>
-                `).join("")}
+                `
+                  )
+                  .join("")}
               </div>
-            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Циклічних залежностей не знайдено</div>'}
+            `
+                : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Циклічних залежностей не знайдено</div>'
+            }
           </div>
 
           <!-- God Files -->
@@ -925,29 +1331,45 @@ window.UIRenderer = {
             <p style="font-size:10px;color:#6b7280;margin:0 0 8px 0;">
               Файли, які імпортують багато інших файлів (високі вихідні залежності)
             </p>
-            ${godFiles.length > 0 ? `
+            ${
+              godFiles.length > 0
+                ? `
               <div style="background:#f0f9ff;border-radius:6px;border:1px solid #e0f2fe;overflow:hidden;max-height:300px;overflow-y:auto;">
                 <div style="display:grid;grid-template-columns:1fr 120px;font-size:11px;background:#e0f2fe;padding:6px 10px;font-weight:600;color:#0369a1;position:sticky;top:0;z-index:1;">
                   <div>Файл</div>
                   <div style="text-align:right;">Імпортує</div>
                 </div>
-                ${godFiles.map(file => `
+                ${godFiles
+                  .map(
+                    (file) => `
                   <div style="display:grid;grid-template-columns:1fr 120px;padding:6px 10px;border-bottom:1px solid #e0f2fe;font-size:11px;">
                     <div>
-                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                        file.fullPath
+                      }">
                         ${file.file}
                       </div>
-                      <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                      <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                        file.fullPath
+                      }">
                         ${file.fullPath}
                       </div>
                     </div>
                     <div style="text-align:right;color:#0c4a6e;font-weight:500;">
-                      ${file.imports} ${this.getWordForm(file.imports, ['файл', 'файли', 'файлів'])}
+                      ${file.imports} ${this.getWordForm(file.imports, [
+                      "файл",
+                      "файли",
+                      "файлів",
+                    ])}
                     </div>
                   </div>
-                `).join("")}
+                `
+                  )
+                  .join("")}
               </div>
-            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'}
+            `
+                : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'
+            }
           </div>
 
           <!-- Hub Files -->
@@ -958,29 +1380,45 @@ window.UIRenderer = {
             <p style="font-size:10px;color:#6b7280;margin:0 0 8px 0;">
               Файли, які імпортуються багатьма іншими (високі вхідні залежності)
             </p>
-            ${hubFiles.length > 0 ? `
+            ${
+              hubFiles.length > 0
+                ? `
               <div style="background:#fef3ff;border-radius:6px;border:1px solid #fae8ff;overflow:hidden;max-height:300px;overflow-y:auto;">
                 <div style="display:grid;grid-template-columns:1fr 140px;font-size:11px;background:#fae8ff;padding:6px 10px;font-weight:600;color:#86198f;position:sticky;top:0;z-index:1;">
                   <div>Файл</div>
                   <div style="text-align:right;">Імпортується</div>
                 </div>
-                ${hubFiles.map(file => `
+                ${hubFiles
+                  .map(
+                    (file) => `
                   <div style="display:grid;grid-template-columns:1fr 140px;padding:6px 10px;border-bottom:1px solid #fae8ff;font-size:11px;">
                     <div>
-                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                        file.fullPath
+                      }">
                         ${file.file}
                       </div>
-                      <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.fullPath}">
+                      <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                        file.fullPath
+                      }">
                         ${file.fullPath}
                       </div>
                     </div>
                     <div style="text-align:right;color:#86198f;font-weight:500;">
-                      ${file.importedBy} ${this.getWordForm(file.importedBy, ['файлом', 'файлами', 'файлами'])}
+                      ${file.importedBy} ${this.getWordForm(file.importedBy, [
+                      "файлом",
+                      "файлами",
+                      "файлами",
+                    ])}
                     </div>
                   </div>
-                `).join("")}
+                `
+                  )
+                  .join("")}
               </div>
-            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'}
+            `
+                : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'
+            }
           </div>
 
           <!-- Most Used Components -->
@@ -988,32 +1426,56 @@ window.UIRenderer = {
             <h4 style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#1e40af;">
               🏆 Найчастіше використовувані компоненти
             </h4>
-            ${mostUsedComponents.length > 0 ? `
+            ${
+              mostUsedComponents.length > 0
+                ? `
               <div style="background:#f5f3ff;border-radius:6px;border:1px solid #ede9fe;overflow:hidden;max-height:300px;overflow-y:auto;">
                 <div style="display:grid;grid-template-columns:1fr 120px;font-size:11px;background:#ede9fe;padding:6px 10px;font-weight:600;color:#5b21b6;position:sticky;top:0;z-index:1;">
                   <div>Компонент</div>
                   <div style="text-align:right;">Використань</div>
                 </div>
-                ${mostUsedComponents.map(comp => `
+                ${mostUsedComponents
+                  .map(
+                    (comp) => `
                   <div style="display:grid;grid-template-columns:1fr 120px;padding:6px 10px;border-bottom:1px solid #ede9fe;font-size:11px;">
                     <div>
-                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${comp.name}">
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${
+                        comp.name
+                      }">
                         ${comp.name}
                       </div>
-                      ${comp.file ? `
+                      ${
+                        comp.file
+                          ? `
                         <div style="font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${comp.file}">
                           ${comp.file}
                         </div>
-                      ` : ''}
+                      `
+                          : ""
+                      }
                     </div>
                     <div style="text-align:right;color:#5b21b6;font-weight:500;">
                       ${comp.totalCount || comp.count} разів
-                      ${comp.fileCount ? `<div style="font-size:9px;color:#6b7280;">у ${comp.fileCount} ${this.getWordForm(comp.fileCount, ['файлі', 'файлах', 'файлах'])}</div>` : ''}
+                      ${
+                        comp.fileCount
+                          ? `<div style="font-size:9px;color:#6b7280;">у ${
+                              comp.fileCount
+                            } ${this.getWordForm(comp.fileCount, [
+                              "файлі",
+                              "файлах",
+                              "файлах",
+                            ])}</div>`
+                          : ""
+                      }
                     </div>
                   </div>
-                `).join("")}
+                `
+                  )
+                  .join("")}
               </div>
-            ` : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'}
+            `
+                : '<div style="color:#6b7280;font-size:12px;padding:8px 0;">Не знайдено</div>'
+            }
           </div>
         </div>
       </div>
@@ -1027,22 +1489,34 @@ window.UIRenderer = {
     const unusedCSS = result.unusedCSS || [];
     if (unusedCSS.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
     html += '<span style="color:#9333ea;">🎨 Невикористані CSS класи</span>';
-    html += '<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:4px 8px;border-radius:4px;">' + unusedCSS.length + '</span>';
-    html += '</h3>';
+    html +=
+      '<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:4px 8px;border-radius:4px;">' +
+      unusedCSS.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedCSS.forEach((item) => {
       const location = item.location || "невідомо";
-      html += '<div style="padding:8px;background:#faf5ff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
-      html += '<code style="font-family:monospace;color:#7c3aed;font-weight:bold;">' + item.name + '</code>';
-      html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#faf5ff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#7c3aed;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1051,26 +1525,39 @@ window.UIRenderer = {
     const unusedFunctions = result.unusedFunctions || [];
     if (unusedFunctions.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
     html += '<span style="color:#3b82f6;">⚡ Невикористані функції</span>';
-    html += '<span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:4px 8px;border-radius:4px;">' + unusedFunctions.length + '</span>';
-    html += '</h3>';
+    html +=
+      '<span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:4px 8px;border-radius:4px;">' +
+      unusedFunctions.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedFunctions.forEach((fn) => {
       const name = fn.name || fn;
       const location = fn.location || "";
-      html += '<div style="padding:8px;background:#eff6ff;border-radius:4px;margin-bottom:8px;font-size:11px;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-      html += '<code style="font-family:monospace;color:#1e40af;font-weight:bold;">' + name + '()</code>';
+      html +=
+        '<div style="padding:8px;background:#eff6ff;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#1e40af;font-weight:bold;">' +
+        name +
+        "()</code>";
       if (location) {
-        html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
+        html +=
+          '<span style="color:#6b7280;font-size:10px;">📄 ' +
+          location +
+          "</span>";
       }
-      html += '</div></div>';
+      html += "</div></div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1079,11 +1566,16 @@ window.UIRenderer = {
     const unusedVariables = result.unusedVariables || [];
     if (unusedVariables.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
     html += '<span style="color:#f59e0b;">📦 Невикористані змінні</span>';
-    html += '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:4px;">' + unusedVariables.length + '</span>';
-    html += '</h3>';
+    html +=
+      '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:4px;">' +
+      unusedVariables.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     const typeLabels = {
@@ -1098,18 +1590,29 @@ window.UIRenderer = {
     unusedVariables.forEach((variable) => {
       const location = variable.location || "";
       const typeLabel = typeLabels[variable.type] || variable.type || "змінна";
-      html += '<div style="padding:8px;background:#fef3c7;border-radius:4px;margin-bottom:8px;font-size:11px;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-      html += '<code style="font-family:monospace;color:#92400e;font-weight:bold;">' + variable.name + '</code>';
-      html += '<span style="font-size:9px;background:#fbbf24;color:#78350f;padding:2px 6px;border-radius:3px;">' + typeLabel + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#fef3c7;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+      html +=
+        '<code style="font-family:monospace;color:#92400e;font-weight:bold;">' +
+        variable.name +
+        "</code>";
+      html +=
+        '<span style="font-size:9px;background:#fbbf24;color:#78350f;padding:2px 6px;border-radius:3px;">' +
+        typeLabel +
+        "</span>";
+      html += "</div>";
       if (location) {
-        html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
+        html +=
+          '<span style="color:#6b7280;font-size:10px;">📄 ' +
+          location +
+          "</span>";
       }
-      html += '</div>';
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1118,19 +1621,28 @@ window.UIRenderer = {
     const unusedImages = result.unusedImages || [];
     if (unusedImages.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#ec4899;">🖼️ Невикористані зображення (' + unusedImages.length + ')</h3>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#ec4899;">🖼️ Невикористані зображення (' +
+      unusedImages.length +
+      ")</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedImages.forEach((image) => {
       const path = image.path || "невідомо";
-      html += '<div style="padding:8px;background:#fce7f3;border-radius:4px;margin-bottom:8px;font-size:11px;">';
-      html += '<div style="font-weight:bold;color:#9f1239;margin-bottom:4px;">' + image.name + '</div>';
-      html += '<div style="color:#6b7280;font-size:10px;">📄 ' + path + '</div>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#fce7f3;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="font-weight:bold;color:#9f1239;margin-bottom:4px;">' +
+        image.name +
+        "</div>";
+      html +=
+        '<div style="color:#6b7280;font-size:10px;">📄 ' + path + "</div>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1139,22 +1651,34 @@ window.UIRenderer = {
     const unusedExports = result.unusedExports || [];
     if (unusedExports.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
     html += '<span style="color:#8b5cf6;">📤 Невикористані експорти</span>';
-    html += '<span style="font-size:11px;background:#ede9fe;color:#6b21a8;padding:4px 8px;border-radius:4px;">' + unusedExports.length + '</span>';
-    html += '</h3>';
+    html +=
+      '<span style="font-size:11px;background:#ede9fe;color:#6b21a8;padding:4px 8px;border-radius:4px;">' +
+      unusedExports.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedExports.forEach((item) => {
       const location = item.location || "невідомо";
-      html += '<div style="padding:8px;background:#f5f3ff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
-      html += '<code style="font-family:monospace;color:#6b21a8;font-weight:bold;">' + item.name + '</code>';
-      html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#f5f3ff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#6b21a8;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1163,22 +1687,35 @@ window.UIRenderer = {
     const unusedComponents = result.unusedComponents || [];
     if (unusedComponents.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
-    html += '<span style="color:#06b6d4;">⚛️ Невикористані React компоненти</span>';
-    html += '<span style="font-size:11px;background:#cffafe;color:#0e7490;padding:4px 8px;border-radius:4px;">' + unusedComponents.length + '</span>';
-    html += '</h3>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html +=
+      '<span style="color:#06b6d4;">⚛️ Невикористані React компоненти</span>';
+    html +=
+      '<span style="font-size:11px;background:#cffafe;color:#0e7490;padding:4px 8px;border-radius:4px;">' +
+      unusedComponents.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedComponents.forEach((item) => {
       const location = item.location || "невідомо";
-      html += '<div style="padding:8px;background:#ecfeff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
-      html += '<code style="font-family:monospace;color:#0e7490;font-weight:bold;">' + item.name + '</code>';
-      html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#ecfeff;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#0e7490;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1187,22 +1724,34 @@ window.UIRenderer = {
     const unusedHooks = result.unusedHooks || [];
     if (unusedHooks.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
     html += '<span style="color:#14b8a6;">🪝 Невикористані хуки</span>';
-    html += '<span style="font-size:11px;background:#ccfbf1;color:#0f766e;padding:4px 8px;border-radius:4px;">' + unusedHooks.length + '</span>';
-    html += '</h3>';
+    html +=
+      '<span style="font-size:11px;background:#ccfbf1;color:#0f766e;padding:4px 8px;border-radius:4px;">' +
+      unusedHooks.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedHooks.forEach((item) => {
       const location = item.location || "невідомо";
-      html += '<div style="padding:8px;background:#f0fdfa;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
-      html += '<code style="font-family:monospace;color:#0f766e;font-weight:bold;">' + item.name + '</code>';
-      html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#f0fdfa;border-radius:4px;margin-bottom:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">';
+      html +=
+        '<code style="font-family:monospace;color:#0f766e;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1211,26 +1760,43 @@ window.UIRenderer = {
     const unusedEnumsInterfaces = result.unusedEnumsInterfaces || [];
     if (unusedEnumsInterfaces.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
-    html += '<span style="color:#a855f7;">🔷 Невикористані enum / interface / type</span>';
-    html += '<span style="font-size:11px;background:#f3e8ff;color:#7e22ce;padding:4px 8px;border-radius:4px;">' + unusedEnumsInterfaces.length + '</span>';
-    html += '</h3>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html +=
+      '<span style="color:#a855f7;">🔷 Невикористані enum / interface / type</span>';
+    html +=
+      '<span style="font-size:11px;background:#f3e8ff;color:#7e22ce;padding:4px 8px;border-radius:4px;">' +
+      unusedEnumsInterfaces.length +
+      "</span>";
+    html += "</h3>";
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedEnumsInterfaces.forEach((item) => {
       const location = item.location || "невідомо";
       const typeLabel = item.type || "type";
-      html += '<div style="padding:8px;background:#faf5ff;border-radius:4px;margin-bottom:8px;font-size:11px;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-      html += '<code style="font-family:monospace;color:#7e22ce;font-weight:bold;">' + item.name + '</code>';
-      html += '<span style="font-size:9px;background:#a855f7;color:#fff;padding:2px 6px;border-radius:3px;">' + typeLabel + '</span>';
-      html += '</div>';
-      html += '<span style="color:#6b7280;font-size:10px;">📄 ' + location + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#faf5ff;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+      html +=
+        '<code style="font-family:monospace;color:#7e22ce;font-weight:bold;">' +
+        item.name +
+        "</code>";
+      html +=
+        '<span style="font-size:9px;background:#a855f7;color:#fff;padding:2px 6px;border-radius:3px;">' +
+        typeLabel +
+        "</span>";
+      html += "</div>";
+      html +=
+        '<span style="color:#6b7280;font-size:10px;">📄 ' +
+        location +
+        "</span>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1239,23 +1805,35 @@ window.UIRenderer = {
     const unusedAPIEndpoints = result.unusedAPIEndpoints || [];
     if (unusedAPIEndpoints.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
-    html += '<span style="color:#ef4444;">🌐 Невикористані API ендпоінти</span>';
-    html += '<span style="font-size:11px;background:#fee2e2;color:#991b1b;padding:4px 8px;border-radius:4px;">' + unusedAPIEndpoints.length + '</span>';
-    html += '</h3>';
-    html += '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">API роути, які не використовуються в коді</p>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;display:flex;align-items:center;gap:8px;">';
+    html +=
+      '<span style="color:#ef4444;">🌐 Невикористані API ендпоінти</span>';
+    html +=
+      '<span style="font-size:11px;background:#fee2e2;color:#991b1b;padding:4px 8px;border-radius:4px;">' +
+      unusedAPIEndpoints.length +
+      "</span>";
+    html += "</h3>";
+    html +=
+      '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">API роути, які не використовуються в коді</p>';
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     unusedAPIEndpoints.forEach((item) => {
       const location = item.location || "невідомо";
-      html += '<div style="padding:8px;background:#fef2f2;border-radius:4px;margin-bottom:8px;font-size:11px;">';
-      html += '<div style="font-weight:bold;color:#991b1b;margin-bottom:4px;">' + item.name + '</div>';
-      html += '<div style="color:#6b7280;font-size:10px;">📄 ' + location + '</div>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#fef2f2;border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="font-weight:bold;color:#991b1b;margin-bottom:4px;">' +
+        item.name +
+        "</div>";
+      html +=
+        '<div style="color:#6b7280;font-size:10px;">📄 ' + location + "</div>";
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1264,9 +1842,14 @@ window.UIRenderer = {
     const duplicateFunctions = result.duplicateFunctions || [];
     if (duplicateFunctions.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#f59e0b;">🔄 Функції з однаковими назвами (' + duplicateFunctions.length + ')</h3>';
-    html += '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">Функції з однаковими іменами у різних файлах можуть призвести до конфліктів</p>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#f59e0b;">🔄 Функції з однаковими назвами (' +
+      duplicateFunctions.length +
+      ")</h3>";
+    html +=
+      '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">Функції з однаковими іменами у різних файлах можуть призвести до конфліктів</p>';
     html += '<div style="max-height:200px;overflow-y:auto;">';
 
     duplicateFunctions.forEach((dup) => {
@@ -1276,32 +1859,46 @@ window.UIRenderer = {
       const bgColor = isSimilar ? "#fef3c7" : "#fee2e2";
       const borderColor = isSimilar ? "#fbbf24" : "#ef4444";
 
-      html += '<div style="padding:12px;background:' + bgColor + ';border-left:3px solid ' + borderColor + ';border-radius:4px;margin-bottom:8px;font-size:11px;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-      html += '<code style="font-family:monospace;color:#92400e;font-weight:bold;font-size:13px;">' + dup.name + '()</code>';
+      html +=
+        '<div style="padding:12px;background:' +
+        bgColor +
+        ";border-left:3px solid " +
+        borderColor +
+        ';border-radius:4px;margin-bottom:8px;font-size:11px;">';
+      html +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+      html +=
+        '<code style="font-family:monospace;color:#92400e;font-weight:bold;font-size:13px;">' +
+        dup.name +
+        "()</code>";
       html += '<div style="display:flex;gap:6px;align-items:center;">';
 
       if (isSimilar) {
-        html += '<span style="background:#22c55e;color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;">⚠️ Схожий код</span>';
+        html +=
+          '<span style="background:#22c55e;color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;">⚠️ Схожий код</span>';
       } else {
-        html += '<span style="background:#3b82f6;color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;">✓ Різний код</span>';
+        html +=
+          '<span style="background:#3b82f6;color:#fff;padding:2px 6px;border-radius:8px;font-size:9px;">✓ Різний код</span>';
       }
 
-      html += '<span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:12px;font-size:10px;">' + count + ' файли</span>';
-      html += '</div></div>';
+      html +=
+        '<span style="background:#f59e0b;color:#fff;padding:2px 8px;border-radius:12px;font-size:10px;">' +
+        count +
+        " файли</span>";
+      html += "</div></div>";
 
       if (locations.length > 0) {
         html += '<div style="color:#6b7280;font-size:10px;">';
         locations.forEach((loc) => {
-          html += '<div style="margin-top:4px;">📄 ' + loc + '</div>';
+          html += '<div style="margin-top:4px;">📄 ' + loc + "</div>";
         });
-        html += '</div>';
+        html += "</div>";
       }
 
-      html += '</div>';
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1326,32 +1923,55 @@ window.UIRenderer = {
       const priorityB = priorityMap[methodB] ?? 2;
 
       if (priorityA !== priorityB) return priorityA - priorityB;
-      if (priorityA === 2 && methodA !== methodB) return methodA.localeCompare(methodB);
+      if (priorityA === 2 && methodA !== methodB)
+        return methodA.localeCompare(methodB);
 
       const pathA = routeA.path || "";
       const pathB = routeB.path || "";
       return pathA.localeCompare(pathB);
     });
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#8b5cf6;">🌐 API Роути (' + apiRoutes.length + ')</h3>';
-    html += '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">Знайдені API ендпоінти та їх параметри</p>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#8b5cf6;">🌐 API Роути (' +
+      apiRoutes.length +
+      ")</h3>";
+    html +=
+      '<p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">Знайдені API ендпоінти та їх параметри</p>';
     html += '<div style="max-height:400px;overflow-y:auto;">';
 
     sortedRoutes.forEach((route) => {
       const method = (route.method || "GET").toUpperCase();
       const colors = methodColors[method] || methodColors.GET;
 
-      html += '<div style="padding:12px;background:' + colors.bg + ';border-left:3px solid ' + colors.border + ';border-radius:4px;margin-bottom:12px;">';
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-      html += '<span style="background:' + colors.border + ';color:#fff;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:bold;">' + method + '</span>';
-      html += '<code style="font-family:monospace;color:' + colors.text + ';font-weight:bold;font-size:12px;">' + route.path + '</code>';
+      html +=
+        '<div style="padding:12px;background:' +
+        colors.bg +
+        ";border-left:3px solid " +
+        colors.border +
+        ';border-radius:4px;margin-bottom:12px;">';
+      html +=
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+      html +=
+        '<span style="background:' +
+        colors.border +
+        ';color:#fff;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:bold;">' +
+        method +
+        "</span>";
+      html +=
+        '<code style="font-family:monospace;color:' +
+        colors.text +
+        ';font-weight:bold;font-size:12px;">' +
+        route.path +
+        "</code>";
 
       if (route.type === "client") {
-        html += '<span style="background:#6b7280;color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;">CLIENT</span>';
+        html +=
+          '<span style="background:#6b7280;color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;">CLIENT</span>';
       }
 
-      html += '</div>';
+      html += "</div>";
 
       const params = route.params || {};
       const args = route.args || [];
@@ -1366,65 +1986,103 @@ window.UIRenderer = {
         (requestProps.body && requestProps.body.length);
 
       if (hasParams) {
-        html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">';
+        html +=
+          '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">';
 
         // Handler arguments (server)
         if (args.length) {
-          html += '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">⚙️ Handler args:</span> ';
-          html += '<span style="font-size:10px;color:' + colors.text + ';">' + args.join(", ") + '</span></div>';
+          html +=
+            '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">⚙️ Handler args:</span> ';
+          html +=
+            '<span style="font-size:10px;color:' +
+            colors.text +
+            ';">' +
+            args.join(", ") +
+            "</span></div>";
         }
 
         // Path params
         if (params.path && params.path.length) {
-          html += '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🧩 Path:</span> ';
-          html += '<span style="font-size:10px;color:' + colors.text + ';">' + params.path.join(", ") + '</span></div>';
+          html +=
+            '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🧩 Path:</span> ';
+          html +=
+            '<span style="font-size:10px;color:' +
+            colors.text +
+            ';">' +
+            params.path.join(", ") +
+            "</span></div>";
         }
 
         // Body params
         if (params.body && params.body.length) {
-          html += '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">📦 Body:</span> ';
-          html += '<span style="font-size:10px;color:' + colors.text + ';">' + params.body.join(", ") + '</span></div>';
+          html +=
+            '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">📦 Body:</span> ';
+          html +=
+            '<span style="font-size:10px;color:' +
+            colors.text +
+            ';">' +
+            params.body.join(", ") +
+            "</span></div>";
         }
 
         // Query params
         if (params.query && params.query.length) {
-          html += '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🔍 Query:</span> ';
-          html += '<span style="font-size:10px;color:' + colors.text + ';">' + params.query.join(", ") + '</span></div>';
+          html +=
+            '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🔍 Query:</span> ';
+          html +=
+            '<span style="font-size:10px;color:' +
+            colors.text +
+            ';">' +
+            params.query.join(", ") +
+            "</span></div>";
         }
 
         // Headers
         if (params.headers && params.headers.length) {
-          html += '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">📋 Headers:</span> ';
-          html += '<span style="font-size:10px;color:' + colors.text + ';">' + params.headers.join(", ") + '</span></div>';
+          html +=
+            '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">📋 Headers:</span> ';
+          html +=
+            '<span style="font-size:10px;color:' +
+            colors.text +
+            ';">' +
+            params.headers.join(", ") +
+            "</span></div>";
         }
 
         // Client request props (fetch / axios)
         if (requestProps.body && requestProps.body.length) {
-          html += '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🚀 Request body:</span> ';
-          html += '<span style="font-size:10px;color:' + colors.text + ';">' + requestProps.body.join(", ") + '</span></div>';
+          html +=
+            '<div style="margin-bottom:6px;"><span style="font-size:10px;color:#6b7280;font-weight:bold;">🚀 Request body:</span> ';
+          html +=
+            '<span style="font-size:10px;color:' +
+            colors.text +
+            ';">' +
+            requestProps.body.join(", ") +
+            "</span></div>";
         }
 
         if (args.length) {
-          html += '<span style="background:#0ea5e9;color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;">SERVER</span>';
+          html +=
+            '<span style="background:#0ea5e9;color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;">SERVER</span>';
         }
 
-        html += '</div>';
+        html += "</div>";
       }
 
       if (route.files && route.files.length > 0) {
         html += '<div style="margin-top:8px;font-size:10px;color:#6b7280;">';
         const filesList = route.files.slice(0, 3).join(", ");
-        html += '📄 Файли: ' + filesList;
+        html += "📄 Файли: " + filesList;
         if (route.files.length > 3) {
-          html += ' та ще ' + (route.files.length - 3);
+          html += " та ще " + (route.files.length - 3);
         }
-        html += '</div>';
+        html += "</div>";
       }
 
-      html += '</div>';
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
@@ -1433,34 +2091,50 @@ window.UIRenderer = {
     const pages = result.pages || [];
     if (pages.length === 0) return "";
 
-    let html = '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#10b981;">📄 Сторінки (' + pages.length + ')</h3>';
+    let html =
+      '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html +=
+      '<h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#10b981;">📄 Сторінки (' +
+      pages.length +
+      ")</h3>";
     html += '<div style="max-height:300px;overflow-y:auto;">';
 
     pages.forEach((page) => {
       const fileName = page.path ? page.path.split("/").pop() : "невідомо";
-      const path = page.path && page.path.includes("/")
-        ? page.path.substring(0, page.path.lastIndexOf("/"))
-        : page.path || "";
+      const path =
+        page.path && page.path.includes("/")
+          ? page.path.substring(0, page.path.lastIndexOf("/"))
+          : page.path || "";
 
-      html += '<div style="padding:8px;background:#ecfdf5;border-radius:4px;margin-bottom:6px;font-size:11px;">';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">';
-      html += '<div style="font-weight:bold;color:#059669;">' + fileName + '</div>';
-      html += '<span style="background:#10b981;color:#fff;padding:2px 6px;border-radius:10px;font-size:9px;">' + (page.type || "page") + '</span>';
-      html += '</div>';
+      html +=
+        '<div style="padding:8px;background:#ecfdf5;border-radius:4px;margin-bottom:6px;font-size:11px;">';
+      html +=
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">';
+      html +=
+        '<div style="font-weight:bold;color:#059669;">' + fileName + "</div>";
+      html +=
+        '<span style="background:#10b981;color:#fff;padding:2px 6px;border-radius:10px;font-size:9px;">' +
+        (page.type || "page") +
+        "</span>";
+      html += "</div>";
       if (path) {
-        html += '<div style="color:#6b7280;font-size:10px;">📁 ' + path + '</div>';
+        html +=
+          '<div style="color:#6b7280;font-size:10px;">📁 ' + path + "</div>";
       }
-      html += '</div>';
+      html += "</div>";
     });
 
-    html += '</div></div>';
+    html += "</div></div>";
     return html;
   },
 
   // 17. Render TypeScript Types
   renderTypeScriptTypes: function (result) {
-    const typesAnalysis = result.typesAnalysis || { allTypes: [], byFile: {}, stats: {} };
+    const typesAnalysis = result.typesAnalysis || {
+      allTypes: [],
+      byFile: {},
+      stats: {},
+    };
     if (typesAnalysis.stats.totalTypes === 0) return "";
 
     let html = `
@@ -1481,11 +2155,17 @@ window.UIRenderer = {
         <div style="background: #f9fafb; border-radius: 6px; padding: 12px; border: 1px solid #e5e7eb; width: 100%; box-sizing: border-box;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb;">
             <div>
-              <span style="font-weight: 600; color: #111827;">${typeIcon} ${window.Utils.escapeHTML(type.name)}</span>
-              <span style="color: #6b7280; font-size: 11px; margin-left: 6px;">${type.type}</span>
+              <span style="font-weight: 600; color: #111827;">${typeIcon} ${window.Utils.escapeHTML(
+        type.name
+      )}</span>
+              <span style="color: #6b7280; font-size: 11px; margin-left: 6px;">${
+                type.type
+              }</span>
             </div>
             <div style="font-size: 11px; color: #6b7280;">
-              ${window.Utils.escapeHTML(type.file.split("/").pop())}:${type.line}
+              ${window.Utils.escapeHTML(type.file.split("/").pop())}:${
+        type.line
+      }
             </div>
           </div>
 
@@ -1497,19 +2177,27 @@ ${window.Utils.escapeHTML(type.content)}
             </pre>
           </div>
 
-          ${type.dependencies && type.dependencies.length > 0 ? `
+          ${
+            type.dependencies && type.dependencies.length > 0
+              ? `
             <div style="font-size: 11px; color: #6b7280; margin-top: 8px;">
               <div style="color: #6b7280; font-size: 11px; margin-bottom: 4px;">Dependencies:</div>
               <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                ${type.dependencies.map(dep => `
+                ${type.dependencies
+                  .map(
+                    (dep) => `
                   <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px;
                                border-radius: 4px; font-size: 10px; white-space: nowrap;">
                     ${window.Utils.escapeHTML(dep.name)}
                   </span>
-                `).join("")}
+                `
+                  )
+                  .join("")}
               </div>
             </div>
-          ` : ""}
+          `
+              : ""
+          }
         </div>
       `;
     });
@@ -1553,44 +2241,55 @@ ${window.Utils.escapeHTML(type.content)}
     let html = "";
 
     if (nothingFound) {
-      html += '<div style="border:1px solid #bbf7d0;border-radius:8px;padding:24px;text-align:center;background:#f0fdf4;">';
+      html +=
+        '<div style="border:1px solid #bbf7d0;border-radius:8px;padding:24px;text-align:center;background:#f0fdf4;">';
       html += '<p style="margin:0;font-size:48px;">🎉</p>';
-      html += '<p style="margin:8px 0 0;color:#15803d;font-size:16px;font-weight:bold;">Чудово! Не знайдено невикористаного коду</p>';
-      html += '<p style="margin:4px 0 0;color:#6b7280;font-size:12px;">Ваш проект оптимізований</p>';
-      html += '</div>';
+      html +=
+        '<p style="margin:8px 0 0;color:#15803d;font-size:16px;font-weight:bold;">Чудово! Не знайдено невикористаного коду</p>';
+      html +=
+        '<p style="margin:4px 0 0;color:#6b7280;font-size:12px;">Ваш проект оптимізований</p>';
+      html += "</div>";
     } else {
-      html += '<div style="border:1px solid #fcd34d;border-radius:8px;padding:16px;background:#fef3c7;margin-top:16px;">';
-      html += '<h3 style="margin:0 0 8px 0;font-size:14px;font-weight:bold;color:#92400e;">💡 Рекомендації</h3>';
-      html += '<ul style="margin:0;padding-left:20px;font-size:11px;color:#92400e;">';
+      html +=
+        '<div style="border:1px solid #fcd34d;border-radius:8px;padding:16px;background:#fef3c7;margin-top:16px;">';
+      html +=
+        '<h3 style="margin:0 0 8px 0;font-size:14px;font-weight:bold;color:#92400e;">💡 Рекомендації</h3>';
+      html +=
+        '<ul style="margin:0;padding-left:20px;font-size:11px;color:#92400e;">';
 
       if (unusedCSS.length > 0) {
-        html += '<li>Видаліть невикористані CSS класи або використайте PurgeCSS/Tailwind JIT</li>';
+        html +=
+          "<li>Видаліть невикористані CSS класи або використайте PurgeCSS/Tailwind JIT</li>";
       }
       if (unusedFunctions.length > 0) {
-        html += '<li>Видаліть невикористані функції або експорти</li>';
+        html += "<li>Видаліть невикористані функції або експорти</li>";
       }
       if (unusedVariables.length > 0) {
-        html += '<li>Видаліть невикористані змінні та константи</li>';
+        html += "<li>Видаліть невикористані змінні та константи</li>";
       }
       if (unusedExports.length > 0) {
-        html += '<li>Видаліть невикористані експорти для зменшення розміру бандлу</li>';
+        html +=
+          "<li>Видаліть невикористані експорти для зменшення розміру бандлу</li>";
       }
       if (unusedComponents.length > 0) {
-        html += '<li>Видаліть невикористані React компоненти</li>';
+        html += "<li>Видаліть невикористані React компоненти</li>";
       }
       if (unusedHooks.length > 0) {
-        html += '<li>Видаліть невикористані хуки або перемістіть їх у бібліотеку</li>';
+        html +=
+          "<li>Видаліть невикористані хуки або перемістіть їх у бібліотеку</li>";
       }
       if (unusedEnumsInterfaces.length > 0) {
-        html += '<li>Видаліть невикористані типи, інтерфейси та енуми</li>';
+        html += "<li>Видаліть невикористані типи, інтерфейси та енуми</li>";
       }
       if (unusedAPIEndpoints.length > 0) {
-        html += '<li>Видаліть або задокументуйте невикористані API ендпоінти</li>';
+        html +=
+          "<li>Видаліть або задокументуйте невикористані API ендпоінти</li>";
       }
 
       html += '<li>Використовуйте ESLint з правилом "no-unused-vars"</li>';
-      html += '<li>Налаштуйте tree-shaking для автоматичного видалення dead code</li>';
-      html += '</ul></div>';
+      html +=
+        "<li>Налаштуйте tree-shaking для автоматичного видалення dead code</li>";
+      html += "</ul></div>";
     }
 
     return html;

@@ -418,3 +418,100 @@ h3 {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Component Tree Visualization */
+.component-tree-container {
+  margin-top: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.component-tree-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.component-tree-controls .btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.component-tree-controls .btn:hover {
+  background: #e5e7eb;
+}
+
+.component-tree {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  max-height: 800px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+.component-node {
+  margin: 4px 0;
+  position: relative;
+}
+
+.component-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: all 0.2s;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.component-name:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.component-path {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: normal;
+  margin-top: 2px;
+  font-family: 'Courier New', monospace;
+}
+
+.component-children {
+  margin-left: 24px;
+  padding-left: 16px;
+  border-left: 2px solid #e5e7eb;
+  margin-top: 4px;
+}
+
+.toggle-children {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  font-size: 10px;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+
+.toggle-children:hover {
+  color: #374151;
+}

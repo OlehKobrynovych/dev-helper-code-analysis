@@ -37,9 +37,10 @@ Files must load in this exact order (defined in `extension/popup.html`):
 15. `components/unused-endpoints-analyzer.js` - Unused endpoints analyzer (`window.UnusedEndpointsAnalyzer`)
 16. `components/dependencies-analyzer.js` - Dependencies analyzer (`window.DependenciesAnalyzer`)
 17. `components/api-analyzer.js` - API route analyzer (`window.APIAnalyzer`)
-18. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
-19. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
-20. `popup-main.js` - Main controller with event handlers
+18. `components/component-tree-analyzer.js` - Component tree analyzer (`window.ComponentTreeAnalyzer`)
+19. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
+20. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
+21. `popup-main.js` - Main controller with event handlers
 
 ### Key Components
 
@@ -74,6 +75,19 @@ Files must load in this exact order (defined in `extension/popup.html`):
 - `window.APIAnalyzer.analyzeAPIRoutes()` - Finds API routes (Next.js, Express, fetch, axios)
 - `window.APIAnalyzer.extractNextJSPath()` - Next.js route extraction
 - Supports route parameter detection from content
+
+**`components/component-tree-analyzer.js`** - Component tree visualization
+
+- `window.ComponentTreeAnalyzer.analyze()` - Аналізує структуру компонентів та їх залежності
+- `window.ComponentTreeAnalyzer.renderComponentTree()` - Графічне відображення дерева компонентів
+- Підтримує default та named імпорти
+- Розумне визначення точок входу (entry points):
+  - **Next.js**: `pages/`, `app/` (App Router), виключаючи `_app`, `_document`, `api/`
+  - **React Router**: `screens/`, `routes/`, `views/`
+  - **CRA/Vite**: `src/App.js`, `containers/`
+  - **Gatsby**: `src/pages/`
+- **Fallback логіка**: якщо точки входу не знайдено, визначає кореневі компоненти автоматично
+- Показує ієрархію компонентів з можливістю розгортання/згортання
 
 **`components/zip-handler.js`** - ZIP processing
 
@@ -111,10 +125,12 @@ window.ZipHandler.analyzeZipProject() →
   ├─ window.UnusedHooksAnalyzer.analyzeUnusedHooks()
   ├─ window.UnusedTypesAnalyzer.analyzeUnusedEnumsInterfaces()
   ├─ window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints()
+  ├─ window.ComponentTreeAnalyzer.analyze()
   └─ window.DependenciesAnalyzer.analyzeDependencies()
 → Returns result object →
 window.UIRenderer.renderResultsHTML(result) →
-HTML inserted into DOM
+  ├─ renderComponentTree() - графічна візуалізація дерева компонентів
+  └─ HTML inserted into DOM
 ```
 
 ## Development Commands

@@ -293,6 +293,10 @@ window.ZipHandler = {
             const apiEndpointsAnalysis =
               window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints(jsFiles);
 
+            // Analyze component tree
+            const componentTreeAnalysis =
+              window.ComponentTreeAnalyzer.analyze(files);
+
             // Analyze project dependencies
             const dependencyAnalysis =
               window.DependenciesAnalyzer.analyzeDependencies(jsFiles);
@@ -319,6 +323,7 @@ window.ZipHandler = {
               pages: pagesInfo,
               typesAnalysis: typesAnalysis,
               projectStyles: projectStyles,
+              componentTree: componentTreeAnalysis,
               stats: {
                 cssFilesAnalyzed: cssFiles.length,
                 jsFilesAnalyzed: jsFiles.length,
