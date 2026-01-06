@@ -236,31 +236,40 @@ window.UIRenderer = {
     return html;
   },
 
-  // Головна функція-оркестратор для детальних блоків
-  renderDetailedBlocks: function (result) {
-    return (
-      this.renderProjectStyles(result) +
-      this.renderComponentTree(result) + // Add component tree visualization
-      this.renderFileTypes(result) +
-      this.renderDependencies(result) +
-      this.renderCodeHealth(result) +
-      this.renderDependencyAnalysis(result) +
-      this.renderUnusedCSS(result) +
-      this.renderUnusedFunctions(result) +
-      this.renderUnusedVariables(result) +
-      this.renderUnusedImages(result) +
-      this.renderUnusedExports(result) +
-      this.renderUnusedComponents(result) +
-      this.renderUnusedHooks(result) +
-      this.renderUnusedEnumsInterfaces(result) +
-      this.renderUnusedAPIEndpoints(result) +
-      this.renderDuplicateFunctions(result) +
-      this.renderAPIRoutes(result) +
-      this.renderPages(result) +
-      this.renderTypeScriptTypes(result) +
-      this.renderRecommendations(result)
-    );
+  // Render component dependencies treemap
+  renderComponentDependencies: function (result) {
+    if (!result.componentDependencies || result.componentDependencies.length === 0) {
+      return "";
+    }
+
+    const components = result.componentDependencies;
+
+    let html = `
+      <div class="analysis-block">
+        <div class="block-header">
+          <h3>🔗 Залежності компонентів</h3>
+          <p>Візуалізація використання компонентів один в одному (${components.length} ${this.getWordForm(components.length, ["компонент", "компоненти", "компонентів"])})</p>
+        </div>
+        <div id="componentDependenciesTreemap" style="max-height: 800px; overflow-y: auto; padding: 16px;"></div>
+      </div>
+    `;
+
+    // Render treemap after DOM update
+    setTimeout(() => {
+      if (
+        window.ComponentDependenciesVisualizer &&
+        window.ComponentDependenciesVisualizer.renderTreemap
+      ) {
+        window.ComponentDependenciesVisualizer.renderTreemap(
+          "componentDependenciesTreemap",
+          components
+        );
+      }
+    }, 100);
+
+    return html;
   },
+
 
   // Utility function for word forms
   getWordForm: function (n, textForms) {
@@ -446,11 +455,13 @@ window.UIRenderer = {
     return html;
   },
 
+
   // Головна функція-оркестратор для детальних блоків
   renderDetailedBlocks: function (result) {
     return (
       this.renderProjectStyles(result) +
-      this.renderComponentTree(result) + // Add component tree visualization
+      this.renderComponentTree(result) +
+      this.renderComponentDependencies(result) +
       this.renderFileTypes(result) +
       this.renderDependencies(result) +
       this.renderCodeHealth(result) +

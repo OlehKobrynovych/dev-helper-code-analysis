@@ -37,10 +37,11 @@ Files must load in this exact order (defined in `extension/popup.html`):
 15. `components/unused-endpoints-analyzer.js` - Unused endpoints analyzer (`window.UnusedEndpointsAnalyzer`)
 16. `components/dependencies-analyzer.js` - Dependencies analyzer (`window.DependenciesAnalyzer`)
 17. `components/api-analyzer.js` - API route analyzer (`window.APIAnalyzer`)
-18. `components/component-tree-analyzer.js` - Component tree analyzer (`window.ComponentTreeAnalyzer`)
-19. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
-20. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
-21. `popup-main.js` - Main controller with event handlers
+18. `components/component-tree-analyzer.js` - File tree analyzer (`window.ComponentTreeAnalyzer`)
+19. `components/component-dependencies-visualizer.js` - Component dependencies visualizer (`window.ComponentDependenciesVisualizer`)
+20. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
+21. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
+22. `popup-main.js` - Main controller with event handlers
 
 ### Key Components
 
@@ -76,18 +77,25 @@ Files must load in this exact order (defined in `extension/popup.html`):
 - `window.APIAnalyzer.extractNextJSPath()` - Next.js route extraction
 - Supports route parameter detection from content
 
-**`components/component-tree-analyzer.js`** - Component tree visualization
+**`components/component-tree-analyzer.js`** - File tree visualization
 
-- `window.ComponentTreeAnalyzer.analyze()` - Аналізує структуру компонентів та їх залежності
-- `window.ComponentTreeAnalyzer.renderComponentTree()` - Графічне відображення дерева компонентів
-- Підтримує default та named імпорти
-- Розумне визначення точок входу (entry points):
-  - **Next.js**: `pages/`, `app/` (App Router), виключаючи `_app`, `_document`, `api/`
-  - **React Router**: `screens/`, `routes/`, `views/`
-  - **CRA/Vite**: `src/App.js`, `containers/`
-  - **Gatsby**: `src/pages/`
-- **Fallback логіка**: якщо точки входу не знайдено, визначає кореневі компоненти автоматично
-- Показує ієрархію компонентів з можливістю розгортання/згортання
+- `window.ComponentTreeAnalyzer.analyze()` - Будує дерево файлової структури проекту
+- `window.ComponentTreeAnalyzer.buildFileTree()` - Рекурсивна побудова дерева папок/файлів
+- `window.ComponentTreeAnalyzer.renderComponentTree()` - Графічне відображення файлового дерева
+- Автоматична фільтрація: `node_modules`, `.next`, `dist`, `build`, `.git`, `coverage`
+- Пріоритет головних папок: `src`, `pages`, `app`, `components`, `public`
+- Іконки для різних типів файлів (📁 папки, ⚛️ React, 📘 TypeScript, 🎨 стилі)
+- Відображення розміру файлів та кількості дочірніх елементів
+
+**`components/component-dependencies-visualizer.js`** - Component dependencies treemap
+
+- `window.ComponentDependenciesVisualizer.analyze()` - Аналізує залежності між компонентами
+- `window.ComponentDependenciesVisualizer.renderTreemap()` - Treemap візуалізація (як на скріншоті)
+- Показує тільки компоненти які імпортують інші компоненти
+- Кожен компонент має унікальний колір (генерується з хешу імені)
+- Вкладені компоненти відображаються у вигляді кольорових квадратів
+- Можливість розгортання/згортання для перегляду деталей
+- Grid layout для вкладених компонентів з hover ефектами
 
 **`components/zip-handler.js`** - ZIP processing
 

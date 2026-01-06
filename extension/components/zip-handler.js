@@ -297,6 +297,14 @@ window.ZipHandler = {
             const componentTreeAnalysis =
               window.ComponentTreeAnalyzer.analyze(files);
 
+            // Analyze component dependencies (treemap)
+            const componentDependencies =
+              window.ComponentDependenciesVisualizer.analyze(jsFiles);
+            console.log(
+              "🔗 Component dependencies:",
+              componentDependencies
+            );
+
             // Analyze project dependencies
             const dependencyAnalysis =
               window.DependenciesAnalyzer.analyzeDependencies(jsFiles);
@@ -324,6 +332,7 @@ window.ZipHandler = {
               typesAnalysis: typesAnalysis,
               projectStyles: projectStyles,
               componentTree: componentTreeAnalysis,
+              componentDependencies: componentDependencies,
               stats: {
                 cssFilesAnalyzed: cssFiles.length,
                 jsFilesAnalyzed: jsFiles.length,
