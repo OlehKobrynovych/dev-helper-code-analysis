@@ -1,13 +1,16 @@
 window.AuthAnalyzer = {
   analyze: function(files) {
     const authProviders = [
-      { key: "Google OAuth", match: ["google", "gapi", "@react-oauth/google", "next-auth/providers/google"] },
-      { key: "Facebook", match: ["facebook", "fb", "react-facebook-login"] },
+      { key: "Google OAuth", match: ["@react-oauth/google", "next-auth/providers/google"] },
+      { key: "Facebook", match: ["react-facebook-login"] },
       { key: "NextAuth", match: ["next-auth", "getServerSession", "useSession"] },
       { key: "Firebase Auth", match: ["firebase/auth"] },
-      { key: "Auth0", match: ["@auth0/auth0-react"] },
-      { key: "Custom JWT", match: ["Authorization", "Bearer", "access_token"] },
+      { key: "Auth0", match: ["@auth0/auth0-react"] }
     ];
+
+    const customJwtMatches = {
+        "Custom JWT": [/Authorization:\s*Bearer/i, /['"`]access_token['"`]/],
+    };
 
     let foundProviders = new Set();
     let authTypes = new Set();
@@ -22,6 +25,12 @@ window.AuthAnalyzer = {
                 }
             });
         });
+        if (content.includes('"google"') || content.includes('"gapi"')) {
+            foundProviders.add("Google OAuth");
+        }
+        if (content.includes('"facebook"') || content.includes('"fb"')) {
+            foundProviders.add("Facebook");
+        }
     }
 
     files.forEach(file => {
@@ -30,11 +39,20 @@ window.AuthAnalyzer = {
 
         authProviders.forEach(provider => {
           provider.match.forEach(match => {
-            if (content.includes(match)) {
+            const importRegex = new RegExp(`(import|require).*['"]${match}['"]`);
+            if (importRegex.test(content)) {
               foundProviders.add(provider.key);
             }
           });
         });
+        
+        for (const providerKey in customJwtMatches) {
+            customJwtMatches[providerKey].forEach(regex => {
+                if (regex.test(content)) {
+                    foundProviders.add(providerKey);
+                }
+            });
+        }
 
         if (content.match(/Cookies|js-cookie|react-cookie/i)) {
             authTypes.add('Cookie-based');

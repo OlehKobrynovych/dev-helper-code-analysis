@@ -459,13 +459,13 @@ window.UIRenderer = {
   // Головна функція-оркестратор для детальних блоків
   renderDetailedBlocks: function (result) {
     return (
-      this.renderAuthAnalysis(result) +
-      this.renderStorageAnalysis(result) +
       this.renderProjectStyles(result) +
       this.renderComponentTree(result) +
       this.renderComponentDependencies(result) +
       this.renderFileTypes(result) +
       this.renderDependencies(result) +
+      this.renderAuthAnalysis(result) +
+      this.renderStorageAnalysis(result) +
       this.renderCodeHealth(result) +
       this.renderDependencyAnalysis(result) +
       this.renderUnusedCSS(result) +
@@ -492,12 +492,9 @@ window.UIRenderer = {
     }
 
     let html = `
-      <div class="analysis-block">
-        <div class="block-header">
-          <h3>🔐 Авторизація</h3>
-          <p>Способи авторизації, що використовуються в проекті</p>
-        </div>
-        <div style="padding: 16px; background: #f9f9f9; border-radius: 8px;">
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+        <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#374151;">🔐 Авторизація</h3>
+        <p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">Способи авторизації, що використовуються в проекті</p>
     `;
 
     if (auth.types.length > 0) {
@@ -523,7 +520,6 @@ window.UIRenderer = {
     }
 
     html += `
-        </div>
       </div>
     `;
 
@@ -537,12 +533,9 @@ window.UIRenderer = {
     }
 
     let html = `
-      <div class="analysis-block">
-        <div class="block-header">
-          <h3>💾 Storage</h3>
-          <p>Використання локального сховища в проекті</p>
-        </div>
-        <div style="padding: 16px; background: #f9f9f9; border-radius: 8px;">
+      <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">
+        <h3 style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#374151;">💾 Storage</h3>
+        <p style="margin:0 0 12px 0;font-size:11px;color:#6b7280;">Використання локального сховища в проекті</p>
     `;
 
     if (storage.localStorage.length > 0) {
@@ -588,7 +581,6 @@ window.UIRenderer = {
     }
 
     html += `
-        </div>
       </div>
     `;
 
