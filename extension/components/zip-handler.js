@@ -32,6 +32,12 @@ window.ZipHandler = {
       );
       const fileName = new TextDecoder().decode(fileNameBytes);
 
+      // Пропускаємо файли з папки node_modules
+      if (fileName.includes("node_modules/")) {
+        offset += 46 + fileNameLength + extraFieldLength + commentLength;
+        continue;
+      }
+
       if (!fileName.endsWith("/")) {
         if (view.getUint32(localHeaderOffset, true) === 0x04034b50) {
           const compMethod = view.getUint16(localHeaderOffset + 8, true);
@@ -263,7 +269,8 @@ window.ZipHandler = {
               cssFiles,
               jsFiles
             );
-            const projectStyles = window.CSSAnalyzer.analyzeProjectStyles(cssFiles);
+            const projectStyles =
+              window.CSSAnalyzer.analyzeProjectStyles(cssFiles);
             const functionAnalysis =
               window.FunctionsAnalyzer.analyzeFunctions(jsFiles);
             const variableAnalysis =
@@ -279,7 +286,7 @@ window.ZipHandler = {
             const fileTypesInfo = window.Analyzers.analyzeFileTypes(files);
             const pagesInfo = window.PagesAnalyzer.analyzePages(files);
             const typesAnalysis =
-              window.TypeScriptAnalyzer.analyzeTypeScriptTypes(files);
+              window.TypeScriptAnalyzer.analyzeTypeScriptTypes(jsFiles);
 
             // Нові аналізатори
             const exportsAnalysis =
@@ -300,10 +307,7 @@ window.ZipHandler = {
             // Analyze component dependencies (treemap)
             const componentDependencies =
               window.ComponentDependenciesVisualizer.analyze(jsFiles);
-            console.log(
-              "🔗 Component dependencies:",
-              componentDependencies
-            );
+            console.log("🔗 Component dependencies:", componentDependencies);
 
             // Analyze project dependencies
             const dependencyAnalysis =
