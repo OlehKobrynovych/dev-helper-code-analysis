@@ -53,6 +53,8 @@ The codebase is structured in a modular way. The core logic for the analysis is 
 - **Background Script:** `extension/background.js` manages the extension's popup window.
 - **ZIP Handling:** `extension/components/zip-handler.js` is responsible for extracting and processing the uploaded `.zip` file and calling the various analyzers.
 - **Analyzers:** The `extension/components/` directory contains various analyzers for CSS, JavaScript, images, etc. Each analyzer is in its own file and exposes its functionality through the `window` object.
+  - **`auth-analyzer.js`**: Analyzes the project to detect authentication and authorization methods.
+  - **`storage-analyzer.js`**: Analyzes the project to detect the usage of browser storage (LocalStorage, SessionStorage, Cookies, IndexedDB).
 - **UI Rendering:** `extension/components/ui-renderer.js` is responsible for rendering the analysis results.
 
 ### Data Flow

@@ -459,6 +459,8 @@ window.UIRenderer = {
   // Головна функція-оркестратор для детальних блоків
   renderDetailedBlocks: function (result) {
     return (
+      this.renderAuthAnalysis(result) +
+      this.renderStorageAnalysis(result) +
       this.renderProjectStyles(result) +
       this.renderComponentTree(result) +
       this.renderComponentDependencies(result) +
@@ -482,6 +484,117 @@ window.UIRenderer = {
       this.renderRecommendations(result)
     );
   },
+
+  renderAuthAnalysis: function (result) {
+    const auth = result.auth;
+    if (!auth || (!auth.providers.length && !auth.types.length)) {
+      return '';
+    }
+
+    let html = `
+      <div class="analysis-block">
+        <div class="block-header">
+          <h3>🔐 Авторизація</h3>
+          <p>Способи авторизації, що використовуються в проекті</p>
+        </div>
+        <div style="padding: 16px; background: #f9f9f9; border-radius: 8px;">
+    `;
+
+    if (auth.types.length > 0) {
+      html += `
+          <div style="margin-bottom: 12px;">
+            <h4 style="font-size: 13px; color: #333; margin-bottom: 8px;">Тип:</h4>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              ${auth.types.map(type => `<li style="font-size: 12px; color: #555;">- ${type}</li>`).join('')}
+            </ul>
+          </div>
+      `;
+    }
+
+    if (auth.providers.length > 0) {
+      html += `
+          <div>
+            <h4 style="font-size: 13px; color: #333; margin-bottom: 8px;">Провайдери:</h4>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              ${auth.providers.map(provider => `<li style="font-size: 12px; color: #555;">• ${provider}</li>`).join('')}
+            </ul>
+          </div>
+      `;
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
+  },
+
+  renderStorageAnalysis: function (result) {
+    const storage = result.storage;
+    if (!storage || (!storage.localStorage.length && !storage.sessionStorage.length && !storage.cookies.length && !storage.indexedDB)) {
+      return '';
+    }
+
+    let html = `
+      <div class="analysis-block">
+        <div class="block-header">
+          <h3>💾 Storage</h3>
+          <p>Використання локального сховища в проекті</p>
+        </div>
+        <div style="padding: 16px; background: #f9f9f9; border-radius: 8px;">
+    `;
+
+    if (storage.localStorage.length > 0) {
+      html += `
+          <div style="margin-bottom: 12px;">
+            <h4 style="font-size: 13px; color: #333; margin-bottom: 8px;">LocalStorage:</h4>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              ${storage.localStorage.map(key => `<li style="font-size: 12px; color: #555;">• ${key}</li>`).join('')}
+            </ul>
+          </div>
+      `;
+    }
+
+    if (storage.sessionStorage.length > 0) {
+      html += `
+          <div style="margin-bottom: 12px;">
+            <h4 style="font-size: 13px; color: #333; margin-bottom: 8px;">SessionStorage:</h4>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              ${storage.sessionStorage.map(key => `<li style="font-size: 12px; color: #555;">• ${key}</li>`).join('')}
+            </ul>
+          </div>
+      `;
+    }
+
+    if (storage.cookies.length > 0) {
+      html += `
+          <div style="margin-bottom: 12px;">
+            <h4 style="font-size: 13px; color: #333; margin-bottom: 8px;">Cookies:</h4>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              ${storage.cookies.map(key => `<li style="font-size: 12px; color: #555;">• ${key}</li>`).join('')}
+            </ul>
+          </div>
+      `;
+    }
+    
+    if (storage.indexedDB) {
+      html += `
+          <div>
+            <h4 style="font-size: 13px; color: #333; margin-bottom: 8px;">IndexedDB:</h4>
+            <p style="font-size: 12px; color: #555; margin: 0;">Проект використовує IndexedDB.</p>
+          </div>
+      `;
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
+  },
+
 
   // Utility function for word forms
   getWordForm: function (n, textForms) {

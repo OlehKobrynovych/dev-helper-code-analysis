@@ -313,6 +313,9 @@ window.ZipHandler = {
               dependencyAnalysis
             );
 
+            const authAnalysis = window.AuthAnalyzer.analyze(files);
+            const storageAnalysis = window.StorageAnalyzer.analyze(files);
+
             resolve({
               architecture: architectureInfo,
               unusedCSS: cssAnalysis.unused,
@@ -333,6 +336,8 @@ window.ZipHandler = {
               projectStyles: projectStyles,
               componentTree: componentTreeAnalysis,
               componentDependencies: componentDependencies,
+              auth: authAnalysis,
+              storage: storageAnalysis,
               stats: {
                 cssFilesAnalyzed: cssFiles.length,
                 jsFilesAnalyzed: jsFiles.length,
