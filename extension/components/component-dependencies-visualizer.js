@@ -77,7 +77,12 @@
 
         // Debug: не знайдено жодного кандидата
         if (importPath.startsWith("@/")) {
-          console.warn("🔍 Alias candidates checked:", importPath, "→", candidates.slice(0, 3));
+          console.warn(
+            "🔍 Alias candidates checked:",
+            importPath,
+            "→",
+            candidates.slice(0, 3)
+          );
         }
 
         return null;
@@ -115,7 +120,8 @@
         if (filePath.match(/\/use[A-Z].*\.(ts|js)$/)) return true;
 
         // 6. Store файли
-        if (filePath.match(/\/store\//i) || filePath.match(/Store\.(ts|js)$/)) return true;
+        if (filePath.match(/\/store\//i) || filePath.match(/Store\.(ts|js)$/))
+          return true;
 
         return false;
       }
@@ -144,7 +150,9 @@
             "axios",
             "classnames",
           ].some(function (lib) {
-            return importPath.startsWith(lib) || importPath.startsWith("@" + lib);
+            return (
+              importPath.startsWith(lib) || importPath.startsWith("@" + lib)
+            );
           });
 
           var isStyleImport =
@@ -157,7 +165,8 @@
 
           // Визначаємо тип імпорту
           var isHook = componentName.startsWith("use");
-          var isStore = importPath.includes("/store/") || importPath.includes("Store");
+          var isStore =
+            importPath.includes("/store/") || importPath.includes("Store");
 
           if (!isExternalLib && !isStyleImport && !isUtility && componentName) {
             imports.push({
@@ -187,7 +196,9 @@
             "axios",
             "classnames",
           ].some(function (lib) {
-            return importPath.startsWith(lib) || importPath.startsWith("@" + lib);
+            return (
+              importPath.startsWith(lib) || importPath.startsWith("@" + lib)
+            );
           });
 
           var isStyleImport =
@@ -198,7 +209,10 @@
 
           if (!isExternalLib && !isStyleImport) {
             var components = namedImports.split(",").map(function (name) {
-              return name.trim().split(/\s+as\s+/)[0].trim();
+              return name
+                .trim()
+                .split(/\s+as\s+/)[0]
+                .trim();
             });
 
             components.forEach(function (comp) {
@@ -207,7 +221,8 @@
 
               // Визначаємо тип імпорту
               var isHook = comp.startsWith("use");
-              var isStore = importPath.includes("/store/") || importPath.includes("Store");
+              var isStore =
+                importPath.includes("/store/") || importPath.includes("Store");
 
               imports.push({
                 source: importPath,
@@ -236,7 +251,9 @@
             "axios",
             "classnames",
           ].some(function (lib) {
-            return importPath.startsWith(lib) || importPath.startsWith("@" + lib);
+            return (
+              importPath.startsWith(lib) || importPath.startsWith("@" + lib)
+            );
           });
 
           if (!isExternalLib) {
@@ -244,7 +261,8 @@
             if (resolved) {
               var name = getComponentName(resolved);
               var isHook = name.startsWith("use");
-              var isStore = importPath.includes("/store/") || importPath.includes("Store");
+              var isStore =
+                importPath.includes("/store/") || importPath.includes("Store");
 
               imports.push({
                 source: importPath,
@@ -310,12 +328,10 @@
             var resolvedKey = resolved.replace(/\.(js|jsx|ts|tsx)$/, "");
             var importedComponent = componentMap.get(resolvedKey);
 
-            if (
-              importedComponent &&
-              importedComponent !== currentComponent &&
-              isUsedAsJSX(content, importedComponent.name)
-            ) {
-              var alreadyAdded = currentComponent.imports.some(function (existing) {
+            if (importedComponent && importedComponent !== currentComponent) {
+              var alreadyAdded = currentComponent.imports.some(function (
+                existing
+              ) {
                 return existing.path === resolved;
               });
 
@@ -334,7 +350,14 @@
               }
             } else if (!importedComponent) {
               // Debug: компонент не знайдено
-              console.warn("❌ Not found:", imp.source, "→", resolved, "from", path);
+              console.warn(
+                "❌ Not found:",
+                imp.source,
+                "→",
+                resolved,
+                "from",
+                path
+              );
             }
           } else {
             // Debug: імпорт не розрезолвився
@@ -359,10 +382,10 @@
           path: component.path,
           size: component.size,
           type: component.type || "component", // Зберігаємо тип
-          children: []
+          children: [],
         };
 
-        component.imports.forEach(function(imp) {
+        component.imports.forEach(function (imp) {
           // КРИТИЧНИЙ ФІКС: використовуємо imp.path, а не imp.name
           var childKey = imp.path.replace(/\.(js|jsx|ts|tsx)$/, "");
           var childComponent = componentMap.get(childKey);
@@ -384,42 +407,51 @@
       var allComponents = Array.from(componentMap.values());
 
       // Фільтруємо: тільки ті що імпортують інші компоненти
-      var componentsWithImports = allComponents.filter(function(comp) {
+      var componentsWithImports = allComponents.filter(function (comp) {
         return comp.imports.length > 0;
       });
 
       console.log("🔗 Components with imports:", componentsWithImports.length);
-      console.log("📋 Sample components:", componentsWithImports.slice(0, 5).map(function(c) {
-        return { name: c.name, imports: c.imports.length };
-      }));
+      console.log(
+        "📋 Sample components:",
+        componentsWithImports.slice(0, 5).map(function (c) {
+          return { name: c.name, imports: c.imports.length };
+        })
+      );
 
       // Сортуємо за кількістю залежностей (більше = важливіші)
-      componentsWithImports.sort(function(a, b) {
+      componentsWithImports.sort(function (a, b) {
         return b.imports.length - a.imports.length;
       });
 
       // Будуємо вкладену структуру для кожного компонента
-      var result = componentsWithImports.map(function(comp) {
-        var structure = buildNestedStructure(comp);
+      var result = componentsWithImports
+        .map(function (comp) {
+          var structure = buildNestedStructure(comp);
 
-        // Додаємо навіть якщо children порожній, але є imports
-        // (компонент імпортує щось, що не знайдено в проекті)
-        if (structure && structure.children.length === 0 && comp.imports.length > 0) {
-          // Додаємо імпорти як children навіть якщо вони не знайдені
-          comp.imports.forEach(function(imp) {
-            structure.children.push({
-              name: imp.name,
-              path: imp.path,
-              size: 0,
-              children: []
+          // Додаємо навіть якщо children порожній, але є imports
+          // (компонент імпортує щось, що не знайдено в проекті)
+          if (
+            structure &&
+            structure.children.length === 0 &&
+            comp.imports.length > 0
+          ) {
+            // Додаємо імпорти як children навіть якщо вони не знайдені
+            comp.imports.forEach(function (imp) {
+              structure.children.push({
+                name: imp.name,
+                path: imp.path,
+                size: 0,
+                children: [],
+              });
             });
-          });
-        }
+          }
 
-        return structure;
-      }).filter(function(comp) {
-        return comp !== null;
-      });
+          return structure;
+        })
+        .filter(function (comp) {
+          return comp !== null;
+        });
 
       console.log("📊 Component dependencies found:", result.length);
 
@@ -470,14 +502,21 @@
 
         var wrapper = createElement("div", "treemap-component");
         wrapper.style.cssText =
-          "margin-bottom: " + (level === 0 ? "16px" : "8px") + "; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: white;";
+          "margin-bottom: " +
+          (level === 0 ? "16px" : "8px") +
+          "; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: white;";
 
-        var mainColor = _this.getColorForComponent(component.name, component.type);
+        var mainColor = _this.getColorForComponent(
+          component.name,
+          component.type
+        );
 
         // Заголовок компонента
         var header = createElement("div", "treemap-header");
         header.style.cssText =
-          "padding: " + (level === 0 ? "12px 16px" : "10px 12px") + "; background: " +
+          "padding: " +
+          (level === 0 ? "12px 16px" : "10px 12px") +
+          "; background: " +
           mainColor +
           "; border-bottom: 2px solid #d1d5db; cursor: pointer;";
 
@@ -485,16 +524,26 @@
         var childrenCount = component.children ? component.children.length : 0;
 
         title.innerHTML =
-          '<strong style="font-size: ' + (level === 0 ? "14px" : "13px") + '; color: #1f2937;">' +
+          '<strong style="font-size: ' +
+          (level === 0 ? "14px" : "13px") +
+          '; color: #1f2937;">' +
           component.name +
-          '</strong><div style="font-size: ' + (level === 0 ? "11px" : "10px") + '; color: #4b5563; margin-top: 2px;">' +
+          '</strong><div style="font-size: ' +
+          (level === 0 ? "11px" : "10px") +
+          '; color: #4b5563; margin-top: 2px;">' +
           component.path +
-          '</div>' +
-          (childrenCount > 0 ? '<div style="font-size: 10px; color: #6b7280; margin-top: 4px;">Використовує ' +
-          childrenCount +
-          " " +
-          (childrenCount === 1 ? "компонент" : childrenCount < 5 ? "компоненти" : "компонентів") +
-          "</div>" : "");
+          "</div>" +
+          (childrenCount > 0
+            ? '<div style="font-size: 10px; color: #6b7280; margin-top: 4px;">Використовує ' +
+              childrenCount +
+              " " +
+              (childrenCount === 1
+                ? "компонент"
+                : childrenCount < 5
+                ? "компоненти"
+                : "компонентів") +
+              "</div>"
+            : "");
 
         header.appendChild(title);
 
@@ -507,7 +556,8 @@
           var grid = createElement("div");
           grid.style.cssText =
             "display: grid; grid-template-columns: repeat(auto-fill, minmax(" +
-            (level === 0 ? "250px" : "200px") + ", 1fr)); gap: 8px;";
+            (level === 0 ? "250px" : "200px") +
+            ", 1fr)); gap: 8px;";
 
           component.children.forEach(function (child) {
             // Рекурсивно рендеримо дочірній компонент
@@ -522,7 +572,9 @@
           header.addEventListener("click", function () {
             isExpanded = !isExpanded;
             body.style.display = isExpanded ? "block" : "none";
-            header.style.borderBottom = isExpanded ? "2px solid #d1d5db" : "none";
+            header.style.borderBottom = isExpanded
+              ? "2px solid #d1d5db"
+              : "none";
           });
         } else {
           // Немає дочірніх - прибираємо курсор
@@ -563,20 +615,24 @@
         info.style.cssText = "margin-bottom: " + (hasChildren ? "8px" : "0");
 
         var name = createElement("div");
-        name.style.cssText = "font-weight: 600; font-size: 13px; color: #111827; margin-bottom: 4px;";
+        name.style.cssText =
+          "font-weight: 600; font-size: 13px; color: #111827; margin-bottom: 4px;";
 
         // Додаємо бейдж типу
         var typeLabel = "";
         if (component.type === "hook") {
-          typeLabel = " <span style='font-size: 10px; padding: 2px 6px; background: #64748b; color: white; border-radius: 4px; margin-left: 6px;'>hook</span>";
+          typeLabel =
+            " <span style='font-size: 10px; padding: 2px 6px; background: #64748b; color: white; border-radius: 4px; margin-left: 6px;'>hook</span>";
         } else if (component.type === "store") {
-          typeLabel = " <span style='font-size: 10px; padding: 2px 6px; background: #92400e; color: white; border-radius: 4px; margin-left: 6px;'>store</span>";
+          typeLabel =
+            " <span style='font-size: 10px; padding: 2px 6px; background: #92400e; color: white; border-radius: 4px; margin-left: 6px;'>store</span>";
         }
 
         name.innerHTML = component.name + typeLabel;
 
         var path = createElement("div");
-        path.style.cssText = "font-size: 10px; color: #4b5563; word-break: break-all;";
+        path.style.cssText =
+          "font-size: 10px; color: #4b5563; word-break: break-all;";
         path.textContent = component.path;
 
         info.appendChild(name);
