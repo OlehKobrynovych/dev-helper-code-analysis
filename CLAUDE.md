@@ -133,11 +133,13 @@ Files must load in this exact order (defined in `extension/popup.html`):
 - Кожен модуль додає свою функцію до `window.UIRenderer.*`
 - Детальна документація: `components/ui-renderer/README.md`
 
-**`popup-main.js`** - Main controller (~60 lines)
+**`popup-main.js`** - Main controller (~65 lines)
 
 - Event listeners for file upload
 - Calls `window.ZipHandler.analyzeZipProject(dataView)`
-- Displays results via `window.UIRenderer.renderResultsHTML()`
+- Displays results via **asynchronous rendering** for better UX on large projects
+- Uses `window.UIRenderer.renderHeaderHTML()` for instant header display
+- Uses `window.UIRenderer.renderDetailedBlocksAsync()` for non-blocking detailed blocks rendering
 - Clean controller pattern - all rendering logic in ui-renderer modules
 
 ### Data Flow
@@ -146,50 +148,72 @@ Files must load in this exact order (defined in `extension/popup.html`):
 User uploads ZIP → popup-main.js reads as ArrayBuffer →
 window.ZipHandler.analyzeZipProject() →
   ├─ extractZipFiles()
-  ├─ window.CSSAnalyzer.analyzeCSSClasses()
-  ├─ window.FunctionsAnalyzer.analyzeFunctions()
-  ├─ window.VariablesAnalyzer.analyzeVariables()
-  ├─ window.ImagesAnalyzer.analyzeImages()
-  ├─ window.DuplicatesAnalyzer.findDuplicateFunctions()
-  ├─ window.APIAnalyzer.analyzeAPIRoutes()
-  ├─ window.Analyzers.analyzeFileTypes()
-  ├─ window.PagesAnalyzer.analyzePages()
-  ├─ window.TypeScriptAnalyzer.analyzeTypeScriptTypes()
-  ├─ window.UnusedExportsAnalyzer.analyzeUnusedExports()
-  ├─ window.UnusedComponentsAnalyzer.analyzeUnusedComponents()
-  ├─ window.UnusedHooksAnalyzer.analyzeUnusedHooks()
-  ├─ window.UnusedTypesAnalyzer.analyzeUnusedEnumsInterfaces()
-  ├─ window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints()
-  ├─ window.ComponentTreeAnalyzer.analyze()
-  └─ window.DependenciesAnalyzer.analyzeDependencies()
+  ├─ window.CSSAnalyzer.analyzeCSSClasses(cssFiles, jsFiles)
+  ├─ window.FunctionsAnalyzer.analyzeFunctions(jsFiles)
+  ├─ window.VariablesAnalyzer.analyzeVariables(jsFiles)
+  ├─ window.ImagesAnalyzer.analyzeImages(imageFiles, jsFiles, cssFiles)
+  ├─ window.DuplicatesAnalyzer.findDuplicateFunctions(jsFiles)
+  ├─ window.APIAnalyzer.analyzeAPIRoutes(jsFiles)
+  ├─ window.Analyzers.analyzeFileTypes(files)
+  ├─ window.PagesAnalyzer.analyzePages(files)
+  ├─ window.TypeScriptAnalyzer.analyzeTypeScriptTypes(jsFiles)
+  ├─ window.UnusedExportsAnalyzer.analyzeUnusedExports(jsFiles)
+  ├─ window.UnusedComponentsAnalyzer.analyzeUnusedComponents(jsFiles)
+  ├─ window.UnusedHooksAnalyzer.analyzeUnusedHooks(jsFiles)
+  ├─ window.UnusedTypesAnalyzer.analyzeUnusedEnumsInterfaces(jsFiles)
+  ├─ window.UnusedEndpointsAnalyzer.analyzeUnusedAPIEndpoints(jsFiles)
+  ├─ window.ComponentTreeAnalyzer.analyze(files)
+  ├─ window.ComponentDependenciesVisualizer.analyze(jsFiles)
+  ├─ window.DependenciesAnalyzer.analyzeDependencies(jsFiles)
+  ├─ window.AuthAnalyzer.analyze(jsFiles) ⚡ optimized to use jsFiles only
+  └─ window.StorageAnalyzer.analyze(jsFiles) ⚡ optimized to use jsFiles only
 → Returns result object →
-window.UIRenderer.renderResultsHTML(result) →
-  └─ window.UIRenderer.renderDetailedBlocks(result) →
-      ├─ window.UIRenderer.renderProjectStyles()
-      ├─ window.UIRenderer.renderComponentTree()
-      ├─ window.UIRenderer.renderComponentDependencies()
-      ├─ window.UIRenderer.renderFileTypes()
-      ├─ window.UIRenderer.renderDependencies()
-      ├─ window.UIRenderer.renderAuthAnalysis()
-      ├─ window.UIRenderer.renderStorageAnalysis()
-      ├─ window.UIRenderer.renderCodeHealth()
-      ├─ window.UIRenderer.renderDependencyAnalysis()
-      ├─ window.UIRenderer.renderUnusedCSS()
-      ├─ window.UIRenderer.renderUnusedFunctions()
-      ├─ window.UIRenderer.renderUnusedVariables()
-      ├─ window.UIRenderer.renderUnusedImages()
-      ├─ window.UIRenderer.renderUnusedExports()
-      ├─ window.UIRenderer.renderUnusedComponents()
-      ├─ window.UIRenderer.renderUnusedHooks()
-      ├─ window.UIRenderer.renderUnusedEnumsInterfaces()
-      ├─ window.UIRenderer.renderUnusedAPIEndpoints()
-      ├─ window.UIRenderer.renderDuplicateFunctions()
-      ├─ window.UIRenderer.renderAPIRoutes()
-      ├─ window.UIRenderer.renderPages()
-      ├─ window.UIRenderer.renderTypeScriptTypes()
-      └─ window.UIRenderer.renderRecommendations()
-→ HTML inserted into DOM
+popup-main.js displayResults() →
+  ├─ window.UIRenderer.renderHeaderHTML(result) → Instant display (stats + architecture)
+  └─ window.UIRenderer.renderDetailedBlocksAsync(result, container) → Async rendering
+      ├─ Renders blocks in batches of 2 via setTimeout(0)
+      ├─ Priority blocks (rendered first):
+      │   ├─ renderProjectStyles()
+      │   ├─ renderComponentTree()
+      │   ├─ renderFileTypes()
+      │   ├─ renderDependencies()
+      │   ├─ renderAuthAnalysis()
+      │   ├─ renderStorageAnalysis()
+      │   └─ renderCodeHealth()
+      └─ Deferred blocks (rendered asynchronously):
+          ├─ renderComponentDependencies()
+          ├─ renderDependencyAnalysis()
+          ├─ renderUnusedCSS()
+          ├─ renderUnusedFunctions()
+          ├─ renderUnusedVariables()
+          ├─ renderUnusedImages()
+          ├─ renderUnusedExports()
+          ├─ renderUnusedComponents()
+          ├─ renderUnusedHooks()
+          ├─ renderUnusedEnumsInterfaces()
+          ├─ renderUnusedAPIEndpoints()
+          ├─ renderDuplicateFunctions()
+          ├─ renderAPIRoutes()
+          ├─ renderPages()
+          ├─ renderTypeScriptTypes()
+          └─ renderRecommendations()
+→ HTML inserted into DOM progressively (non-blocking)
 ```
+
+### Performance Optimizations
+
+**Asynchronous Rendering** (added to prevent UI blocking on large projects):
+
+- `renderHeaderHTML()` - Renders only header section instantly (stats + architecture)
+- `renderDetailedBlocksAsync()` - Renders detail blocks in batches of 2 via `setTimeout(0)`
+- Blocks split into priority (7 blocks) and deferred (16 blocks)
+- UI remains responsive during rendering - user can scroll and interact immediately
+
+**Analyzer Optimizations**:
+
+- `AuthAnalyzer.analyze()` - Now receives `jsFiles` instead of all `files` (faster filtering)
+- `StorageAnalyzer.analyze()` - Now receives `jsFiles` instead of all `files` (faster filtering)
+- Most analyzers already optimized to receive only relevant file types (jsFiles, cssFiles, imageFiles)
 
 ## Development Commands
 
