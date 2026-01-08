@@ -1,7 +1,8 @@
 // UI Renderer - рендеринг результатів аналізу
 window.UIRenderer = window.UIRenderer || {};
 
-window.UIRenderer.renderResultsHTML = function (result) {
+// Рендеринг тільки header частини (статистика + архітектура)
+window.UIRenderer.renderHeaderHTML = function (result) {
   const {
     unusedCSS = [],
     unusedFunctions = [],
@@ -165,10 +166,50 @@ window.UIRenderer.renderResultsHTML = function (result) {
 
   html += "</div></div>";
 
-  return html + window.UIRenderer.renderDetailedBlocks(result);
+  return html;
 };
 
-// Головна функція-оркестратор для детальних блоків
+// Повна синхронна версія (для зворотної сумісності)
+window.UIRenderer.renderResultsHTML = function (result) {
+  return this.renderHeaderHTML(result) + this.renderDetailedBlocks(result);
+};
+
+// Пріоритетні блоки (видимі одразу)
+window.UIRenderer.getPriorityBlocks = function (result) {
+  return [
+    () => window.UIRenderer.renderProjectStyles(result),
+    () => window.UIRenderer.renderComponentTree(result),
+    () => window.UIRenderer.renderFileTypes(result),
+    () => window.UIRenderer.renderDependencies(result),
+    () => window.UIRenderer.renderAuthAnalysis(result),
+    () => window.UIRenderer.renderStorageAnalysis(result),
+    () => window.UIRenderer.renderCodeHealth(result),
+  ];
+};
+
+// Непріоритетні блоки (можна рендерити пізніше)
+window.UIRenderer.getDeferredBlocks = function (result) {
+  return [
+    () => window.UIRenderer.renderComponentDependencies(result),
+    () => window.UIRenderer.renderDependencyAnalysis(result),
+    () => window.UIRenderer.renderUnusedCSS(result),
+    () => window.UIRenderer.renderUnusedFunctions(result),
+    () => window.UIRenderer.renderUnusedVariables(result),
+    () => window.UIRenderer.renderUnusedImages(result),
+    () => window.UIRenderer.renderUnusedExports(result),
+    () => window.UIRenderer.renderUnusedComponents(result),
+    () => window.UIRenderer.renderUnusedHooks(result),
+    () => window.UIRenderer.renderUnusedEnumsInterfaces(result),
+    () => window.UIRenderer.renderUnusedAPIEndpoints(result),
+    () => window.UIRenderer.renderDuplicateFunctions(result),
+    () => window.UIRenderer.renderAPIRoutes(result),
+    () => window.UIRenderer.renderPages(result),
+    () => window.UIRenderer.renderTypeScriptTypes(result),
+    () => window.UIRenderer.renderRecommendations(result),
+  ];
+};
+
+// Головна функція-оркестратор для детальних блоків (синхронна версія)
 window.UIRenderer.renderDetailedBlocks = function (result) {
   return (
     window.UIRenderer.renderProjectStyles(result) +
@@ -195,4 +236,40 @@ window.UIRenderer.renderDetailedBlocks = function (result) {
     window.UIRenderer.renderTypeScriptTypes(result) +
     window.UIRenderer.renderRecommendations(result)
   );
+};
+
+// Асинхронний рендеринг - всі блоки по черзі через setTimeout
+window.UIRenderer.renderDetailedBlocksAsync = function (result, container) {
+  // Всі блоки (пріоритетні + непріоритетні)
+  const allBlocks = [
+    ...this.getPriorityBlocks(result),
+    ...this.getDeferredBlocks(result)
+  ];
+
+  let currentIndex = 0;
+
+  const renderNextBlock = () => {
+    if (currentIndex >= allBlocks.length) {
+      return; // Всі блоки відрендерені
+    }
+
+    // Рендеримо блоки батчами по 2-3 за раз для швидшого завантаження
+    const batchSize = 2;
+    let rendered = 0;
+
+    while (currentIndex < allBlocks.length && rendered < batchSize) {
+      const blockHtml = allBlocks[currentIndex]();
+      container.insertAdjacentHTML('beforeend', blockHtml);
+      currentIndex++;
+      rendered++;
+    }
+
+    // Плануємо наступний батч через setTimeout(0) для розблокування UI
+    if (currentIndex < allBlocks.length) {
+      setTimeout(renderNextBlock, 0);
+    }
+  };
+
+  // Запускаємо рендеринг через мінімальний таймаут
+  setTimeout(renderNextBlock, 0);
 };

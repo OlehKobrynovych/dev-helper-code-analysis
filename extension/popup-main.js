@@ -48,12 +48,17 @@ zipInput.addEventListener("change", (e) => {
 function displayResults(result) {
   console.log("Results:", result);
 
-  let html = window.UIRenderer.renderResultsHTML(result);
-  uploadResults.innerHTML = html;
+  // Рендеримо тільки header частину (статистика та архітектура)
+  const headerHtml = window.UIRenderer.renderHeaderHTML(result);
+  uploadResults.innerHTML = headerHtml;
   uploadResults.style.display = "block";
 
+  // Додаємо обробник для кнопки перезавантаження
   const reuploadBtn = document.getElementById("reuploadBtn");
   if (reuploadBtn) {
     reuploadBtn.addEventListener("click", () => zipInput.click());
   }
+
+  // Рендеримо детальні блоки асинхронно
+  window.UIRenderer.renderDetailedBlocksAsync(result, uploadResults);
 }

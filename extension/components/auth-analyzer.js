@@ -1,5 +1,5 @@
 window.AuthAnalyzer = {
-  analyze: function(files) {
+  analyze: function(jsFiles) {
     const authProviders = [
       { key: "Google OAuth", match: ["@react-oauth/google", "next-auth/providers/google"] },
       { key: "Facebook", match: ["react-facebook-login"] },
@@ -15,7 +15,7 @@ window.AuthAnalyzer = {
     let foundProviders = new Set();
     let authTypes = new Set();
 
-    const packageJsonFile = files.find(file => file.name.endsWith('package.json'));
+    const packageJsonFile = jsFiles.find(file => file.name.endsWith('package.json'));
     if (packageJsonFile) {
         const content = packageJsonFile.content;
         authProviders.forEach(provider => {
@@ -33,43 +33,34 @@ window.AuthAnalyzer = {
         }
     }
 
-    files.forEach(file => {
-      if (file.name.endsWith('.js') || file.name.endsWith('.jsx') || file.name.endsWith('.ts') || file.name.endsWith('.tsx') || file.name.endsWith('.html')) {
-        const content = file.content;
+    jsFiles.forEach(file => {
+      const content = file.content;
 
-        authProviders.forEach(provider => {
-          provider.match.forEach(match => {
-            const importRegex = new RegExp(`(import|require).*['"]${match}['"]`);
-            if (importRegex.test(content)) {
-              foundProviders.add(provider.key);
-            }
-          });
+      authProviders.forEach(provider => {
+        provider.match.forEach(match => {
+          const importRegex = new RegExp(`(import|require).*['"]${match}['"]`);
+          if (importRegex.test(content)) {
+            foundProviders.add(provider.key);
+          }
         });
-        
-        for (const providerKey in customJwtMatches) {
-            customJwtMatches[providerKey].forEach(regex => {
-                if (regex.test(content)) {
-                    foundProviders.add(providerKey);
-                }
-            });
-        }
+      });
 
-        if (content.match(/Cookies|js-cookie|react-cookie/i)) {
-            authTypes.add('Cookie-based');
-        }
-        if (content.match(/Authorization:\s*Bearer/i)) {
-            authTypes.add('Token (JWT)');
-        }
-        if (content.match(/getServerSession|useSession/i)) {
-            authTypes.add('Session (NextAuth)');
-        }
+      for (const providerKey in customJwtMatches) {
+        customJwtMatches[providerKey].forEach(regex => {
+          if (regex.test(content)) {
+            foundProviders.add(providerKey);
+          }
+        });
       }
-      
-      if(file.name.includes('.env')) {
-        const content = file.content;
-        if(content.includes('GOOGLE_CLIENT_ID')) {
-            foundProviders.add('Google OAuth');
-        }
+
+      if (content.match(/Cookies|js-cookie|react-cookie/i)) {
+        authTypes.add('Cookie-based');
+      }
+      if (content.match(/Authorization:\s*Bearer/i)) {
+        authTypes.add('Token (JWT)');
+      }
+      if (content.match(/getServerSession|useSession/i)) {
+        authTypes.add('Session (NextAuth)');
       }
     });
 

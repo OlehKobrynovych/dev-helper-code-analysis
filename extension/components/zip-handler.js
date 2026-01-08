@@ -317,8 +317,8 @@ window.ZipHandler = {
               dependencyAnalysis
             );
 
-            const authAnalysis = window.AuthAnalyzer.analyze(files);
-            const storageAnalysis = window.StorageAnalyzer.analyze(files);
+            const authAnalysis = window.AuthAnalyzer.analyze(jsFiles);
+            const storageAnalysis = window.StorageAnalyzer.analyze(jsFiles);
 
             resolve({
               architecture: architectureInfo,

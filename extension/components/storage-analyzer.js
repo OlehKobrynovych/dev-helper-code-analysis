@@ -1,5 +1,5 @@
 window.StorageAnalyzer = {
-  analyze: function(files) {
+  analyze: function(jsFiles) {
     const storage = {
       localStorage: new Set(),
       sessionStorage: new Set(),
@@ -12,24 +12,22 @@ window.StorageAnalyzer = {
     const cookieRegex = /(?:new Cookies\(\)\.get\(\s*['"`]([^'"`]+)['"`]\)|document\.cookie\s*=\s*['"`]([^'"`]+)=)/g;
     const indexedDBRegex = /indexedDB\.open\(/;
 
-    files.forEach(file => {
-      if (file.name.endsWith('.js') || file.name.endsWith('.jsx') || file.name.endsWith('.ts') || file.name.endsWith('.tsx') || file.name.endsWith('.html')) {
-        const content = file.content;
+    jsFiles.forEach(file => {
+      const content = file.content;
 
-        let match;
-        while ((match = localStorageRegex.exec(content)) !== null) {
-          storage.localStorage.add(match[2]);
-        }
-        while ((match = sessionStorageRegex.exec(content)) !== null) {
-          storage.sessionStorage.add(match[2]);
-        }
-        while ((match = cookieRegex.exec(content)) !== null) {
-          storage.cookies.add(match[1] || match[2]);
-        }
+      let match;
+      while ((match = localStorageRegex.exec(content)) !== null) {
+        storage.localStorage.add(match[2]);
+      }
+      while ((match = sessionStorageRegex.exec(content)) !== null) {
+        storage.sessionStorage.add(match[2]);
+      }
+      while ((match = cookieRegex.exec(content)) !== null) {
+        storage.cookies.add(match[1] || match[2]);
+      }
 
-        if (indexedDBRegex.test(content)) {
-          storage.indexedDB = true;
-        }
+      if (indexedDBRegex.test(content)) {
+        storage.indexedDB = true;
       }
     });
 
