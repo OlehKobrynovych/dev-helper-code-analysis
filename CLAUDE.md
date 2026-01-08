@@ -39,9 +39,15 @@ Files must load in this exact order (defined in `extension/popup.html`):
 17. `components/api-analyzer.js` - API route analyzer (`window.APIAnalyzer`)
 18. `components/component-tree-analyzer.js` - File tree analyzer (`window.ComponentTreeAnalyzer`)
 19. `components/component-dependencies-visualizer.js` - Component dependencies visualizer (`window.ComponentDependenciesVisualizer`)
-20. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
-21. `components/ui-renderer.js` - Result rendering (`window.UIRenderer`)
-22. `popup-main.js` - Main controller with event handlers
+20. `components/auth-analyzer.js` - Auth analyzer (`window.AuthAnalyzer`)
+21. `components/storage-analyzer.js` - Storage analyzer (`window.StorageAnalyzer`)
+22. `components/zip-handler.js` - ZIP processing (`window.ZipHandler`)
+23. **UI Renderer modules** (25 files in `components/ui-renderer/`):
+    - `renderer-utils.js` - Must load first (utilities used by other renderers)
+    - `renderer-project-styles.js` through `renderer-recommendations.js`
+    - All modules extend `window.UIRenderer` object
+24. `components/ui-renderer.js` - Main UI renderer coordinator (`window.UIRenderer`)
+25. `popup-main.js` - Main controller with event handlers
 
 ### Key Components
 
@@ -102,16 +108,37 @@ Files must load in this exact order (defined in `extension/popup.html`):
 - `window.ZipHandler.extractZipFiles()` - Extract ZIP to file array
 - `window.ZipHandler.analyzeZipProject()` - **Main analysis orchestrator** - calls all analyzers
 
-**`components/ui-renderer.js`** - UI rendering
+**`components/ui-renderer.js`** - UI rendering (modular architecture)
 
-- `window.UIRenderer.renderResultsHTML()` - Renders analysis results to HTML
+- **Main file** (~200 lines) - Координатор рендерингу:
+  - `window.UIRenderer.renderResultsHTML()` - Головна функція рендерингу
+  - `window.UIRenderer.renderDetailedBlocks()` - Оркестратор викликів модулів
+- **Модулі** (`components/ui-renderer/`) - 25 окремих renderer модулів:
+  - `renderer-utils.js` - Утиліти (getWordForm, getCommonLibraries)
+  - `renderer-project-styles.js` - Відображення CSS фреймворків
+  - `renderer-component-tree.js` - Файлове дерево проекту
+  - `renderer-component-dependencies.js` - Treemap залежностей
+  - `renderer-file-types.js` - Статистика типів файлів
+  - `renderer-dependencies.js` - Використовувані бібліотеки
+  - `renderer-auth-analysis.js` - Способи авторизації
+  - `renderer-storage-analysis.js` - Використані сховища
+  - `renderer-code-health.js` - Здоров'я коду
+  - `renderer-dependency-analysis.js` - Детальний аналіз залежностей
+  - `renderer-unused-*.js` (9 модулів) - Невикористаний код (CSS, functions, variables, images, exports, components, hooks, enums/interfaces, API endpoints)
+  - `renderer-duplicate-functions.js` - Дублікати функцій
+  - `renderer-api-routes.js` - API endpoints
+  - `renderer-pages.js` - Сторінки та роути
+  - `renderer-typescript-types.js` - TypeScript типи
+  - `renderer-recommendations.js` - Рекомендації
+- Кожен модуль додає свою функцію до `window.UIRenderer.*`
+- Детальна документація: `components/ui-renderer/README.md`
 
 **`popup-main.js`** - Main controller (~60 lines)
 
 - Event listeners for file upload
 - Calls `window.ZipHandler.analyzeZipProject(dataView)`
 - Displays results via `window.UIRenderer.renderResultsHTML()`
-- Clean controller pattern - all rendering logic in ui-renderer.js
+- Clean controller pattern - all rendering logic in ui-renderer modules
 
 ### Data Flow
 
@@ -137,8 +164,31 @@ window.ZipHandler.analyzeZipProject() →
   └─ window.DependenciesAnalyzer.analyzeDependencies()
 → Returns result object →
 window.UIRenderer.renderResultsHTML(result) →
-  ├─ renderComponentTree() - графічна візуалізація дерева компонентів
-  └─ HTML inserted into DOM
+  └─ window.UIRenderer.renderDetailedBlocks(result) →
+      ├─ window.UIRenderer.renderProjectStyles()
+      ├─ window.UIRenderer.renderComponentTree()
+      ├─ window.UIRenderer.renderComponentDependencies()
+      ├─ window.UIRenderer.renderFileTypes()
+      ├─ window.UIRenderer.renderDependencies()
+      ├─ window.UIRenderer.renderAuthAnalysis()
+      ├─ window.UIRenderer.renderStorageAnalysis()
+      ├─ window.UIRenderer.renderCodeHealth()
+      ├─ window.UIRenderer.renderDependencyAnalysis()
+      ├─ window.UIRenderer.renderUnusedCSS()
+      ├─ window.UIRenderer.renderUnusedFunctions()
+      ├─ window.UIRenderer.renderUnusedVariables()
+      ├─ window.UIRenderer.renderUnusedImages()
+      ├─ window.UIRenderer.renderUnusedExports()
+      ├─ window.UIRenderer.renderUnusedComponents()
+      ├─ window.UIRenderer.renderUnusedHooks()
+      ├─ window.UIRenderer.renderUnusedEnumsInterfaces()
+      ├─ window.UIRenderer.renderUnusedAPIEndpoints()
+      ├─ window.UIRenderer.renderDuplicateFunctions()
+      ├─ window.UIRenderer.renderAPIRoutes()
+      ├─ window.UIRenderer.renderPages()
+      ├─ window.UIRenderer.renderTypeScriptTypes()
+      └─ window.UIRenderer.renderRecommendations()
+→ HTML inserted into DOM
 ```
 
 ## Development Commands
@@ -213,22 +263,53 @@ resolve({
 });
 ```
 
-### Adding a UI Block
+### Adding a UI Renderer Module
 
-1. Add render function to `components/ui-renderer.js`:
+**UI Renderer uses modular architecture - each render function is in a separate file.**
+
+1. Create new file `components/ui-renderer/renderer-my-feature.js`:
 
 ```javascript
-window.UIRenderer.renderMyBlock = function (data) {
-  return '<div class="result-card">' + data + "</div>";
+window.UIRenderer = window.UIRenderer || {};
+
+window.UIRenderer.renderMyFeature = function (result) {
+  if (!result.myData) return '';
+
+  let html = `
+    <div class="analysis-block">
+      <div class="block-header">
+        <h3>🎯 Назва блоку</h3>
+        <p>Опис</p>
+      </div>
+      <!-- Вміст -->
+    </div>
+  `;
+  return html;
 };
 ```
 
-2. Call from `ui-renderer.js` in `renderDetailedBlocks()`:
+2. Add script tag to `extension/popup.html` (before `ui-renderer.js`):
 
-````javascript
-renderDetailedBlocks: function(result) {
-  return this.renderMyBlock(result.myData) + /* other blocks */;
-}
+```html
+<!-- UI Renderer modules -->
+<script src="components/ui-renderer/renderer-utils.js"></script>
+<!-- ... other renderer modules ... -->
+<script src="components/ui-renderer/renderer-my-feature.js"></script>
+
+<script src="components/ui-renderer.js"></script>
+```
+
+3. Call from `components/ui-renderer.js` in `renderDetailedBlocks()`:
+
+```javascript
+window.UIRenderer.renderDetailedBlocks = function (result) {
+  return (
+    window.UIRenderer.renderProjectStyles(result) +
+    // ... other renderers ...
+    window.UIRenderer.renderMyFeature(result) +
+    window.UIRenderer.renderRecommendations(result)
+  );
+};
 
 ### File Filtering Patterns
 
@@ -269,16 +350,27 @@ const filteredFiles = files.filter(
 - `extension/QUICK_REFERENCE.md` - API usage examples
 - `extension/GETTING_STARTED.md` - Quick start guide
 - `extension/components/README.md` - Component documentation
+- `extension/components/ui-renderer/README.md` - UI Renderer modules documentation
 
 ## Common Issues
 
 **Icon Creation**: Icons must be created manually using `extension/create-icons.html` before installation.
 
 **Script Order**: If components show as undefined, check script loading order in `popup.html`.
+- **Critical**: UI Renderer modules must load BEFORE `ui-renderer.js`
+- Each module uses `window.UIRenderer = window.UIRenderer || {}` to extend the object
+- If a module file is missing or has syntax errors, all subsequent modules fail
 
 **JSZip Dependency**: The extension depends on `lib/jszip.min.js` for ZIP file processing. Do not remove or update without testing.
 
 **Tailwind Auto-filtering**: CSS analyzer automatically filters out Tailwind utility classes. This logic is in `analyzers.js` `analyzeCSSClasses()`.
+
+**UI Renderer Module Pattern**: All renderer modules must use the pattern:
+```javascript
+window.UIRenderer = window.UIRenderer || {};
+window.UIRenderer.renderMyFeature = function (result) { ... };
+```
+Never use `window.UIRenderer = { ... }` as it will overwrite existing functions.
 
 ## AI Assistant Guidelines
 
