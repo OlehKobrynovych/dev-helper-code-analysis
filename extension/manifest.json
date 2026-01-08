@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "DevHelper Code Analysis",
   "version": "1.0.0",
-  "description": "Аналіз невикористаного коду в проектах - CSS класи, функції, імпорти",
+  "description": "Аналіз проекту - CSS класи, функції, імпорти",
   "permissions": ["storage", "activeTab", "scripting", "windows"],
   "action": {
     "default_icon": {
