@@ -361,6 +361,9 @@ window.CSSAnalyzer = {
       .slice(0, 20)
       .map((entry) => ({ color: entry[0], count: entry[1] }));
 
+    // Detect CSS frameworks from CSS content
+    const frameworks = this._detectCSSFrameworksFromContent(cssFiles);
+
     return {
       variables: Array.from(cssVariables.entries()).map(([name, data]) => ({
         name,
@@ -369,6 +372,76 @@ window.CSSAnalyzer = {
       })),
       fonts: Array.from(allFonts).sort((a, b) => a.localeCompare(b)),
       colors: sortedColors,
+      frameworks: frameworks,
     };
+  },
+
+  _detectCSSFrameworksFromContent: function (cssFiles) {
+    const result = {
+      tailwind: false,
+      bootstrap: false,
+      bulma: false,
+      foundation: false,
+      cssModules: false,
+      sass: false,
+      less: false,
+      styledComponents: false,
+      cssInJs: false,
+    };
+
+    // Check for CSS Modules (by file naming pattern)
+    result.cssModules = cssFiles.some((f) =>
+      f.name.match(/\.module\.(css|scss|sass)$/)
+    );
+
+    // Check for Sass/SCSS
+    result.sass = cssFiles.some((f) => f.name.match(/\.(scss|sass)$/));
+
+    // Check for Less
+    result.less = cssFiles.some((f) => f.name.match(/\.less$/));
+
+    cssFiles.forEach((file) => {
+      const content = file.content;
+      const fileName = file.name.toLowerCase();
+
+      // Tailwind CSS detection
+      if (
+        content.includes('@tailwind') ||
+        content.includes('@apply') ||
+        fileName.includes('tailwind')
+      ) {
+        result.tailwind = true;
+      }
+
+      // Bootstrap detection
+      if (
+        fileName.includes('bootstrap') ||
+        content.includes('.container-fluid') ||
+        content.includes('.row') && content.includes('.col-') ||
+        content.includes('Bootstrap')
+      ) {
+        result.bootstrap = true;
+      }
+
+      // Bulma detection
+      if (
+        fileName.includes('bulma') ||
+        content.includes('.is-') && content.includes('.has-') ||
+        content.includes('Bulma')
+      ) {
+        result.bulma = true;
+      }
+
+      // Foundation detection
+      if (
+        fileName.includes('foundation') ||
+        content.includes('.small-') && content.includes('.large-') ||
+        content.includes('Foundation')
+      ) {
+        result.foundation = true;
+      }
+    });
+
+    return result;
   },
 };

@@ -41,6 +41,43 @@ window.PagesAnalyzer = {
       return EXCLUDED_DIRS.some((dir) => path.includes(dir));
     }
 
+    // Визначення Server/Client компонента
+    function getComponentType(content) {
+      if (!content) return null;
+      if (content.includes("'use client'") || content.includes('"use client"')) {
+        return 'client';
+      }
+      if (content.includes("'use server'") || content.includes('"use server"')) {
+        return 'server';
+      }
+      return null; // Server by default in App Router
+    }
+
+    // Витягування динамічних параметрів з шляху
+    function extractParams(path) {
+      const params = [];
+
+      // [id] -> dynamic
+      const dynamicMatches = path.matchAll(/\[([^\]\.]+)\]/g);
+      for (const match of dynamicMatches) {
+        params.push({ name: match[1], type: 'dynamic' });
+      }
+
+      // [...slug] -> catch-all
+      const catchAllMatches = path.matchAll(/\[\.\.\.([^\]]+)\]/g);
+      for (const match of catchAllMatches) {
+        params.push({ name: match[1], type: 'catch-all' });
+      }
+
+      // [[...slug]] -> optional catch-all
+      const optionalCatchAllMatches = path.matchAll(/\[\[\.\.\.([^\]]+)\]\]/g);
+      for (const match of optionalCatchAllMatches) {
+        params.push({ name: match[1], type: 'optional-catch-all' });
+      }
+
+      return params;
+    }
+
     // 🔍 визначення типу проекту
     const hasNextApp = allFiles.some(
       (f) => f.path.includes("/app/") && f.path.includes("page.")
@@ -56,13 +93,75 @@ window.PagesAnalyzer = {
 
     // 🧭 1. Next.js App Router
     if (hasNextApp) {
+      // Знаходимо всі page, layout, loading, error, not-found файли
       allFiles.forEach((file) => {
         if (isExcluded(file.path)) return;
-        if (file.path.match(/\/app\/.*\/page\.(jsx?|tsx?)$/i)) {
+
+        const isPage = file.path.match(/\/app\/.*\/page\.(jsx?|tsx?)$/i);
+        const isLayout = file.path.match(/\/app\/.*\/layout\.(jsx?|tsx?)$/i);
+        const isLoading = file.path.match(/\/app\/.*\/loading\.(jsx?|tsx?)$/i);
+        const isError = file.path.match(/\/app\/.*\/error\.(jsx?|tsx?)$/i);
+        const isNotFound = file.path.match(/\/app\/.*\/not-found\.(jsx?|tsx?)$/i);
+        const isRoute = file.path.match(/\/app\/.*\/route\.(jsx?|tsx?)$/i);
+
+        if (isPage) {
+          const componentType = getComponentType(file.content);
+          const params = extractParams(file.path);
+
           pages.push({
             path: file.path,
             framework: "Next.js",
             router: "App Router",
+            type: "page",
+            componentType: componentType,
+            isClientComponent: componentType === 'client',
+            isServerComponent: componentType === 'server' || componentType === null,
+            params: params,
+            hasDynamicParams: params.length > 0,
+          });
+        } else if (isLayout) {
+          const componentType = getComponentType(file.content);
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "App Router",
+            type: "layout",
+            componentType: componentType,
+            isClientComponent: componentType === 'client',
+            isServerComponent: componentType === 'server' || componentType === null,
+          });
+        } else if (isLoading) {
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "App Router",
+            type: "loading",
+          });
+        } else if (isError) {
+          const componentType = getComponentType(file.content);
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "App Router",
+            type: "error",
+            componentType: componentType,
+            // Error components must be client components
+            isClientComponent: true,
+          });
+        } else if (isNotFound) {
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "App Router",
+            type: "not-found",
+          });
+        } else if (isRoute) {
+          pages.push({
+            path: file.path,
+            framework: "Next.js",
+            router: "App Router",
+            type: "api",
+            params: extractParams(file.path),
           });
         }
       });

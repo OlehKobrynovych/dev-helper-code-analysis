@@ -515,3 +515,311 @@ h3 {
 .toggle-children:hover {
   color: #374151;
 }
+
+/* Framework Detection Styles */
+.confidence-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.confidence-indicator .label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.confidence-indicator .value {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.confidence-indicator .bar {
+  flex: 1;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidence-indicator .fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.confidence-indicator.high .value { color: #059669; }
+.confidence-indicator.high .fill { background: #10b981; }
+.confidence-indicator.medium .value { color: #d97706; }
+.confidence-indicator.medium .fill { background: #f59e0b; }
+.confidence-indicator.low .value { color: #dc2626; }
+.confidence-indicator.low .fill { background: #ef4444; }
+
+.framework-section {
+  margin-bottom: 16px;
+}
+
+.framework-section h4 {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.framework-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.framework-card.primary {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-color: #667eea40;
+}
+
+.framework-card .name {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.framework-card .version {
+  font-size: 13px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.framework-card .badge {
+  margin-left: auto;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.detail-item {
+  background: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.detail-item .label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-right: 6px;
+}
+
+.detail-item .value {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.css-frameworks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.css-framework-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #374151;
+}
+
+/* Badge variants */
+.badge.server {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge.client {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge.turbopack {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.badge.typescript {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.badge.nextjs {
+  background: #111827;
+  color: white;
+}
+
+.badge.react-router {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.badge.remix {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.badge.tanstack {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+/* Router Analysis Styles */
+.router-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.router-stats .stat-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.router-stats .stat-item .value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.router-stats .stat-item .label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.router-type-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.routes-table {
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.routes-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.routes-table th,
+.routes-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.routes-table th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.routes-table tr:hover {
+  background: #f9fafb;
+}
+
+.route-path {
+  font-family: 'Courier New', monospace;
+  color: #4f46e5;
+}
+
+.route-type {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.route-type.page {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.route-type.api {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.route-type.other {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.route-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.route-params .param {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+}
+
+.route-params .param.dynamic {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.route-params .param.catch-all {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.route-params .param.optional-catch-all {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.route-file {
+  color: #6b7280;
+  font-size: 11px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more-info {
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}

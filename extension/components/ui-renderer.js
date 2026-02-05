@@ -177,6 +177,8 @@ window.UIRenderer.renderResultsHTML = function (result) {
 // Пріоритетні блоки (видимі одразу)
 window.UIRenderer.getPriorityBlocks = function (result) {
   return [
+    () => window.UIRenderer.renderFrameworkDetection(result),
+    () => window.UIRenderer.renderRouterAnalysis(result),
     () => window.UIRenderer.renderProjectStyles(result),
     () => window.UIRenderer.renderComponentTree(result),
     () => window.UIRenderer.renderFileTypes(result),
@@ -212,6 +214,8 @@ window.UIRenderer.getDeferredBlocks = function (result) {
 // Головна функція-оркестратор для детальних блоків (синхронна версія)
 window.UIRenderer.renderDetailedBlocks = function (result) {
   return (
+    window.UIRenderer.renderFrameworkDetection(result) +
+    window.UIRenderer.renderRouterAnalysis(result) +
     window.UIRenderer.renderProjectStyles(result) +
     window.UIRenderer.renderComponentTree(result) +
     window.UIRenderer.renderComponentDependencies(result) +

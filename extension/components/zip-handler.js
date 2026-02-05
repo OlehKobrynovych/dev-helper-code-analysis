@@ -1,5 +1,11 @@
 // ZIP File Handler
 window.ZipHandler = {
+  // Performance limits
+  MAX_FILE_SIZE: 2 * 1024 * 1024, // 2MB per file
+  MAX_TOTAL_FILES: 50000, // Max files to process
+  MAX_JS_FILES: 5000, // Max JS files to analyze
+  MAX_CSS_FILES: 1000, // Max CSS files to analyze
+
   extractZipFiles: async function (view) {
     const files = [];
     let eocdOffset = -1;
@@ -34,6 +40,22 @@ window.ZipHandler = {
 
       // Пропускаємо файли з папки node_modules
       if (fileName.includes("node_modules/")) {
+        offset += 46 + fileNameLength + extraFieldLength + commentLength;
+        continue;
+      }
+
+      const ignoredBuildFolders = [
+        "dist/",
+        "build/",
+        "out/",
+        ".next/",
+        ".nuxt/",
+        ".svelte-kit/",
+        ".angular/",
+        "public/build/",
+        "target/",
+      ];
+      if (ignoredBuildFolders.some((folder) => fileName.includes(folder))) {
         offset += 46 + fileNameLength + extraFieldLength + commentLength;
         continue;
       }
@@ -116,15 +138,46 @@ window.ZipHandler = {
           .then(function (files) {
             console.log("📦 Extracted files:", files.length);
 
-            const cssFiles = files.filter((f) =>
+            // Apply file limits for performance
+            let cssFiles = files.filter((f) =>
               f.name.match(/\.(css|scss|sass|less)$/)
             );
-            const jsFiles = files.filter((f) =>
+            let jsFiles = files.filter((f) =>
               f.name.match(/\.(js|jsx|ts|tsx)$/)
             );
             const imageFiles = files.filter((f) =>
               f.name.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i)
             );
+
+            // Warn and limit if too many files
+            const warnings = [];
+            if (jsFiles.length > window.ZipHandler.MAX_JS_FILES) {
+              warnings.push(
+                `JS files limited from ${jsFiles.length} to ${window.ZipHandler.MAX_JS_FILES}`
+              );
+              jsFiles = jsFiles.slice(0, window.ZipHandler.MAX_JS_FILES);
+            }
+            if (cssFiles.length > window.ZipHandler.MAX_CSS_FILES) {
+              warnings.push(
+                `CSS files limited from ${cssFiles.length} to ${window.ZipHandler.MAX_CSS_FILES}`
+              );
+              cssFiles = cssFiles.slice(0, window.ZipHandler.MAX_CSS_FILES);
+            }
+
+            // Filter out files that are too large
+            const originalJsCount = jsFiles.length;
+            jsFiles = jsFiles.filter(
+              (f) => !f.content || f.content.length <= window.ZipHandler.MAX_FILE_SIZE
+            );
+            if (jsFiles.length < originalJsCount) {
+              warnings.push(
+                `Skipped ${originalJsCount - jsFiles.length} JS files larger than 2MB`
+              );
+            }
+
+            if (warnings.length > 0) {
+              console.warn("⚠️ Performance limits applied:", warnings);
+            }
 
             console.log("🎨 CSS/SCSS files:", cssFiles.length);
             console.log("⚡ JS files:", jsFiles.length);
@@ -320,8 +373,46 @@ window.ZipHandler = {
             const authAnalysis = window.AuthAnalyzer.analyze(jsFiles);
             const storageAnalysis = window.StorageAnalyzer.analyze(jsFiles);
 
+            // Нові аналізатори
+            const frameworkInfo = window.FrameworkDetector.detect(
+              files,
+              packageJson
+            );
+            console.log("🔍 Framework detection:", frameworkInfo);
+
+            const aliasInfo = window.AliasResolver.resolve(files);
+            console.log("📂 Alias resolution:", aliasInfo);
+
+            const routerAnalysis = window.RouterAnalyzer.analyze(
+              files,
+              jsFiles,
+              frameworkInfo
+            );
+            console.log("🧭 Router analysis:", routerAnalysis);
+
+            // Monorepo analysis
+            const monorepoAnalysis = window.MonorepoAnalyzer.analyze(files);
+            console.log("📦 Monorepo analysis:", monorepoAnalysis);
+
+            // Structure analysis
+            const structureAnalysis = window.StructureAnalyzer.analyze(files);
+            console.log("🏗️ Structure analysis:", structureAnalysis);
+
+            // API Usage analysis
+            const apiUsageAnalysis = window.APIUsageAnalyzer.analyze(
+              jsFiles,
+              apiRoutes
+            );
+            console.log("🔗 API Usage analysis:", apiUsageAnalysis);
+
             resolve({
               architecture: architectureInfo,
+              frameworkInfo: frameworkInfo,
+              routerAnalysis: routerAnalysis,
+              aliasInfo: aliasInfo,
+              monorepoAnalysis: monorepoAnalysis,
+              structureAnalysis: structureAnalysis,
+              apiUsageAnalysis: apiUsageAnalysis,
               unusedCSS: cssAnalysis.unused,
               unusedFunctions: functionAnalysis.unused,
               unusedVariables: variableAnalysis.unused,
