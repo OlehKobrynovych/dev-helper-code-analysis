@@ -68,40 +68,6 @@ window.UIRenderer.renderHeaderHTML = function (result) {
     "</strong></div>";
   html += "</div></div>";
 
-  // Add architecture section
-  html += `
-    <div style="margin: 16px 0; padding: 16px; background: #f8f9fa; border-radius: 8px;">
-        <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #4b5563; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">📐</span> Архітектура проекту
-        </h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Тип проекту</div>
-                <div style="font-weight: 500; color: #111827;">${
-                  result.architecture?.projectType || "Невідомо"
-                }</div>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Фреймворк</div>
-                <div style="font-weight: 500; color: #111827;">${
-                  result.architecture?.framework || "Невідомо"
-                }</div>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Структура</div>
-                <div style="font-weight: 500; color: #111827;">${
-                  result.architecture?.structure || "Невідомо"
-                }</div>
-            </div>
-            <div style="background: white; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Рівень вкладеності</div>
-                <div style="font-weight: 500; color: #111827;">${
-                  result.architecture?.nestingLevel || "0"
-                }</div>
-            </div>
-        </div>
-    </div>
-  `;
 
   html +=
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">';

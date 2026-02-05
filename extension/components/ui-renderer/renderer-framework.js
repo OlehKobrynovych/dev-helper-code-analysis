@@ -34,6 +34,45 @@ window.UIRenderer.renderFrameworkDetection = function (result) {
     </div>
   `;
 
+
+
+  const architecture = result.architecture || {};
+  const architectureProjectType =
+    architecture.projectType || fw.projectType || "Невідомо";
+  const architectureFramework =
+    architecture.framework || primaryFramework || "Невідомо";
+  const architectureStructure = architecture.structure || "Невідомо";
+  const architectureNestingLevel =
+    architecture.nestingLevel !== undefined && architecture.nestingLevel !== null
+      ? architecture.nestingLevel
+      : "0";
+
+
+  // Architecture summary
+  html += `
+    <div class="framework-section">
+      <h4>Архітектура проєкту</h4>
+      <div class="details-grid">
+        <div class="detail-item">
+          <span class="label">Тип проєкту:</span>
+          <span class="value">${architectureProjectType}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Фреймворк:</span>
+          <span class="value">${architectureFramework}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Структура:</span>
+          <span class="value">${architectureStructure}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Рівень вкладеності:</span>
+          <span class="value">${architectureNestingLevel}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
   // Primary Framework
   html += `
     <div class="framework-section">
